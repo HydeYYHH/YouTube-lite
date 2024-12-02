@@ -7,7 +7,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.youtubelite"
+        applicationId = "com.hhst.youtubelite"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
