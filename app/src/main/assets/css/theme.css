@@ -1,0 +1,31 @@
+/* smooth scroll */
+html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color:transparent;
+ }
+
+/* replace YT logo */
+/*
+#header-bar > header > ytm-home-logo {
+    content: url("https://i.pinimg.com/originals/26/76/1b/26761bb6052727e18ddf0022bf45d7e6.gif") !important;
+    width: 85px !important;
+    height: 50px !important;
+    object-fit: cover !important;
+}
+*/
+
+
+
+/* sliderball */
+/*
+.YtProgressBarProgressBarLoaded {
+    
+}
+
+.YtProgressBarProgressBarPlayed {
+    background-color: #212a53 !important;
+}
+.mobile-topbar-header, #filter-chip-bar, .page-container, #app > ytm-pivot-bar-renderer:nth-child(2) {
+    background-color: azure !important;
+}
+*/
