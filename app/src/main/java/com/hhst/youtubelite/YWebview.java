@@ -39,7 +39,7 @@ public class YWebview extends WebView {
             "youtube.googleapis.com",
             "googlevideo.com",
             "ytimg.com",
-            "accounts.google.com",
+            "accounts.google",
             "googleusercontent.com",
             "apis.google.com"
     );
@@ -66,6 +66,7 @@ public class YWebview extends WebView {
         settings.setDatabaseEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        setLayerType(LAYER_TYPE_HARDWARE, null);
 
         addJavascriptInterface(new JavascriptInterface(getContext()), "android");
 
@@ -73,6 +74,7 @@ public class YWebview extends WebView {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                // restrict domain
                 if (isAllowedDomain(request.getUrl())){
                     return false;
                 } else {
@@ -90,7 +92,7 @@ public class YWebview extends WebView {
                     return false;
                 }
                 for (String domain: allowed_domain){
-                    if (host.endsWith(domain)){
+                    if (host.endsWith(domain) || host.startsWith(domain)){
                         return true;
                     }
                 }
