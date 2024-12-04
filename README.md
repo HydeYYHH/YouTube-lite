@@ -1,7 +1,7 @@
-YouTube Lite
+litetube
 ============
 
-*YouTube Lite is a lightweight WebView wrapper for YouTube, offering many additional features such as ad blocking, background play and playback progress memory.*
+*litetube is a lightweight WebView wrapper for YouTube, offering many additional features such as ad blocking, background play and playback progress memory.*
 
 
 

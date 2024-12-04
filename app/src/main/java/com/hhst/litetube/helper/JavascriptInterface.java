@@ -1,10 +1,10 @@
-package com.hhst.youtubelite.helper;
+package com.hhst.litetube.helper;
 
 
 import android.content.Context;
 import android.util.Log;
 
-import com.hhst.youtubelite.MainActivity;
+import com.hhst.litetube.MainActivity;
 
 /**
  * Build a JavaScript interface primarily for controlling web tabs in JavaScript.

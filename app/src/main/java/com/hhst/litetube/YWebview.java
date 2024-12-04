@@ -1,4 +1,4 @@
-package com.hhst.youtubelite;
+package com.hhst.litetube;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -19,7 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
 
-import com.hhst.youtubelite.helper.JavascriptInterface;
+import com.hhst.litetube.helper.JavascriptInterface;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hhst.youtubelite"
+    namespace = "com.hhst.litetube"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.hhst.youtubelite"
+        applicationId = "com.hhst.litetube"
         minSdk = 26
         targetSdk = 34
         versionCode = 2

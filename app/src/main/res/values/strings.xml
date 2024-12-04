@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">YouTube lite</string>
+    <string name="app_name">litetube</string>
     <string name="base_url">https://m.youtube.com</string>
 </resources>

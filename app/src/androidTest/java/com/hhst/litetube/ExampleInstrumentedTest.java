@@ -1,4 +1,4 @@
-package com.hhst.youtubelite;
+package com.hhst.litetube;
 
 import android.content.Context;
 
