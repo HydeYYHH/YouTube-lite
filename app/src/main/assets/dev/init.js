@@ -166,8 +166,10 @@ try {
     })
 
     window.addEventListener('doUpdateVisitedHistory', () => {
-        const page_clas = get_page_class(location.href)
-        if (page_clas === 'home' || page_clas === 'subscriptions'){
+        const page_class = get_page_class(location.href)
+        if (page_class === 'home' || page_class === 'subscriptions' || page_class === 'library'
+            || page_class === '@'
+        ){
             android.setRefreshLayoutEnabled(true)
         } else{
             android.setRefreshLayoutEnabled(false)
