@@ -15,11 +15,11 @@ litetube
 
 ## TODOs
 
-* Video download support
-* Display dislike counts
-* ...
-  
-  
+- [ ] Video download support
+- [x]  Display dislike counts
+- [ ] ...
+
+
 
 ## Contributing
 
