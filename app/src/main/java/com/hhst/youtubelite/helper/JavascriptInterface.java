@@ -5,6 +5,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.hhst.youtubelite.MainActivity;
+import com.hhst.youtubelite.Downloader.DownloadDialog;
 
 /**
  * Build a JavaScript interface primarily for controlling web tabs in JavaScript.
@@ -34,8 +35,8 @@ public class JavascriptInterface {
 
 
     @android.webkit.JavascriptInterface
-    public void download(String url){
-
+    public void download(String video_id){
+        new DownloadDialog(video_id, context).show();
     }
 
 }

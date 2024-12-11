@@ -1,6 +1,7 @@
 package com.hhst.youtubelite;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -17,6 +18,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 
 import com.hhst.youtubelite.helper.JavascriptInterface;
@@ -24,9 +26,11 @@ import com.hhst.youtubelite.helper.JavascriptInterface;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 
 public class YWebview extends WebView {
 
@@ -74,16 +78,26 @@ public class YWebview extends WebView {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                // restrict domain
-                if (isAllowedDomain(request.getUrl())){
-                    return false;
+                if (Objects.equals(request.getUrl().getScheme(), "intent")){
+                    // open in other app
+                    try {
+                        Intent intent = Intent.parseUri(request.getUrl().toString(), Intent.URI_INTENT_SCHEME);
+                        getContext().startActivity(intent);
+                    } catch (ActivityNotFoundException | URISyntaxException e) {
+                        post(() -> Toast.makeText(getContext(), "application not found", Toast.LENGTH_SHORT).show());
+                        Log.e("IntentParsing", e.toString());
+                    }
                 } else {
+                    // restrict domain
+                    if (isAllowedDomain(request.getUrl())){
+                        return false;
+                    }
                     // open in browser
                     getContext().startActivity(new Intent(
                             Intent.ACTION_VIEW, request.getUrl()
                     ));
-                    return true;
                 }
+                return true;
             }
 
             public boolean isAllowedDomain(Uri uri){

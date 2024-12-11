@@ -1,26 +1,23 @@
-litetube
+YouTube lite
 ============
 
-*litetube is a lightweight WebView wrapper for YouTube, offering many additional features such as ad blocking, background play and playback progress memory.*
-
-
+* YouTube lite is a lightweight Android WebView wrapper for YouTube, offering many additional features such as ad blocking, background play, video download and playback progress memory.
+  
+  
 
 ## Features
 
-* **Ad Blocking**: Blocks most ads, including sponsor ads and video ads.
+- **super lightweight**
+* **Ad Blocking**
+* **video and thumbnail download**
 * **Background Play**
-* **Play Progress & Video Quality Memory**: Remembers your playback progress and preferred video quality.
-  
-  
-
-## TODOs
-
-* Video download support
-* Display dislike counts
-* ...
+* **show dislike count, help you make informed decisions**
+* **Play Progress & Video Quality Memory**
   
   
 
 ## Contributing
 
 If you encounter a bug, please check the GitHub repository to see if an issue has already been reported. If not, feel free to open a new one.
+
+

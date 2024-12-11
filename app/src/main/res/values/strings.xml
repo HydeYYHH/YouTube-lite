@@ -1,4 +1,23 @@
 <resources>
-    <string name="app_name">YouTube lite</string>
-    <string name="base_url">https://m.youtube.com</string>
+    <string name="app_name" translatable="false">YouTube lite</string>
+    <string name="base_url" translatable="false">https://m.youtube.com</string>
+    <string name="thumbnail">Thumbnail</string>
+    <string name="video">Video</string>
+    <string name="cancel">Cancel</string>
+    <string name="download">Download</string>
+    <string name="select_quality">Select quality: </string>
+    <string name="video_quality">Video Quality</string>
+    <string name="confirm">Confirm</string>
+    <string name="downloading">"Downloading: "</string>
+    <string name="select_something_first">Select something first</string>
+    <string name="retry">Retry</string>
+    <string name="progress">"Progress: "</string>
+    <string name="download_complete">Download complete</string>
+    <string name="download_canceled">Download Canceled</string>
+    <string name="thumbnail_has_been_saved_to">"Thumbnail has been saved to:  "</string>
+    <string name="download_finished">Download finished:  \"%s\" has been saved to \"%s\"</string>
+    <string name="retry_download">"Retry Download:  "</string>
+    <string name="download_finished_merging">Merging…</string>
+    <string name="merge_error">Merge error</string>
+    <string name="failed_to_download">Failed to download</string>
 </resources>
