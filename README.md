@@ -13,8 +13,20 @@ YouTube lite
 * **Background Play**
 * **show dislike count, help you make informed decisions**
 * **Play Progress & Video Quality Memory**
-  
-  
+
+
+
+## TODOs
+
+- [x] show dislike count
+
+- [x] video download
+
+- [ ] ...
+
+
+
+
 
 ## Contributing
 
