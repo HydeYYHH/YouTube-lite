@@ -5,10 +5,11 @@ import android.media.MediaScannerConnection;
 import android.util.Log;
 
 import com.github.kiulian.downloader.downloader.response.Response;
-import com.hhst.youtubelite.helper.AudioVideoMuxer;
 
 
 import java.io.File;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DownloadResponse {
 
@@ -16,6 +17,16 @@ public class DownloadResponse {
     private final Response<File> audioResponse;
     private final File outputDir;
     private final Context context;
+    private final AtomicInteger state;
+
+    private File videoFile = null;
+    private File audioFile = null;
+    private File output = null;
+
+    public static final int INITIALIZED = 0;
+    public static final int DOWNLOADING = 1;
+    public static final int MUXING = 2;
+    public static final int COMPLETED = 3;
 
     public DownloadResponse(
             Context context,
@@ -27,36 +38,52 @@ public class DownloadResponse {
         this.videoResponse = videoResponse;
         this.audioResponse = audioResponse;
         this.outputDir = outputDir;
+        state = new AtomicInteger(INITIALIZED);
     }
 
     public void execute(DownloadFinishCallback onFinish) {
 
-        File audio = audioResponse.data();
-        File video = videoResponse.data();
+        state.set(DOWNLOADING);
+        audioFile = audioResponse.data();
+        videoFile = videoResponse.data();
 
-        File output = new File(outputDir, video.getName());
+        output = new File(outputDir, videoFile.getName());
 
         try {
-            onFinish.apply(video, audio, output);
+            state.set(MUXING);
+            onFinish.apply(videoFile, audioFile, output);
             // notify system media library
             MediaScannerConnection.scanFile(context, new String[]{output.getAbsolutePath()}, null, null);
         } catch (Exception e) {
             Log.e("after download", Log.getStackTraceString(e));
         } finally {
             // clear cache file
-            if (!audio.delete()) {
-                audio.deleteOnExit();
+            if (!audioFile.delete()) {
+                audioFile.deleteOnExit();
             }
-            if (!video.delete()) {
-                video.deleteOnExit();
+            if (!videoFile.delete()) {
+                videoFile.deleteOnExit();
             }
+            state.set(COMPLETED);
         }
 
     }
 
 
     public boolean cancel() {
-        return audioResponse.cancel() && videoResponse.cancel();
+        return audioResponse.cancel() || videoResponse.cancel();
+    }
+
+    public int getState() {
+        return state.get();
+    }
+
+    public List<File> getCache() {
+        return List.of(audioFile, videoFile);
+    }
+
+    public File getOutput() {
+        return output;
     }
 
 }

@@ -54,6 +54,8 @@ public class DownloadService extends Service {
             cancelDownload(taskId);
         } else if ("RETRY_DOWNLOAD".equals(action)) {
             retryDownload(taskId);
+        } else if ("DELETE_DOWNLOAD".equals(action)) {
+            deleteDownload(taskId);
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -98,10 +100,12 @@ public class DownloadService extends Service {
                     connection.connect();
                     input = connection.getInputStream();
 
+                    // convert to bitmap
                     Bitmap bitmap = BitmapFactory.decodeStream(input);
 
                     File outputFile = new File(outputDir, task.fileName + ".jpg");
                     output = Files.newOutputStream(outputFile.toPath());
+                    // output as JPEG
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
                     output.flush();
 
@@ -117,7 +121,7 @@ public class DownloadService extends Service {
                     Log.e("When download thumbnail", Log.getStackTraceString(e));
                     new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                             this,
-                            "Failed to download thumbnail:  " + e,
+                            getString(R.string.failed_to_download_thumbnail) + e,
                             Toast.LENGTH_SHORT
                     ).show());
                 }  finally {
@@ -139,11 +143,14 @@ public class DownloadService extends Service {
         if (task.videoFormat == null) {
             return;
         }
+        // generate task id
         int taskId = download_tasks.size();
         Context context = this;
         DownloadNotification notification = new DownloadNotification(context, taskId);
+        // show notification
         notification.showNotification(task.fileName, 0);
 
+        // get download response
         DownloadResponse response = Downloader.download(
                     context,
                     task.videoFormat,
@@ -163,7 +170,7 @@ public class DownloadService extends Service {
                         public void onError(Throwable throwable) {
                             new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                                     context,
-                                    "Failed to download:  " + throwable,
+                                    getString(R.string.failed_to_download) + throwable,
                                     Toast.LENGTH_SHORT
                             ).show());
                             task.setRunning(false);
@@ -174,10 +181,15 @@ public class DownloadService extends Service {
                     outputDir
             );
 
+        // submit task and start to download video
         download_executor.submit(() -> response.execute(((video, audio, output) -> {
+            // show notification for merging
             notification.afterDownload();
             try {
-                new AudioVideoMuxer().mux(video, audio, output);
+                // for audio and video merging
+                AudioVideoMuxer muxer = new AudioVideoMuxer();
+                task.setMuxer(muxer);
+                muxer.mux(video, audio, output);
             } catch (IOException e) {
                 notification.cancelDownload(getString(R.string.merge_error));
                 new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
@@ -187,11 +199,13 @@ public class DownloadService extends Service {
                 ).show());
             }
 
+            // update notification
             notification.completeDownload(
                     String.format(getString(R.string.download_finished), task.fileName, output.getPath()),
                     output,
                     "video/*"
             );
+            // show a toast for user to notify download complete
             new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                     context,
                     String.format(getString(R.string.download_finished),
@@ -203,53 +217,104 @@ public class DownloadService extends Service {
         })));
         task.setResponse(response);
         task.setNotification(notification);
+        // add task to list for future reference
         download_tasks.put(taskId, task);
     }
 
+
+    // user click cancel button to trigger cancel task event
     private void cancelDownload(int taskId) {
         DownloadTask task = download_tasks.get(taskId);
         if (task == null) {
             return;
         }
-        if (Objects.requireNonNull(task).getResponse().cancel()) {
+        DownloadResponse response = Objects.requireNonNull(task).getResponse();
+
+        if (response.getState() == DownloadResponse.DOWNLOADING) {
+            if (response.cancel()) {
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                        this,
+                        getString(R.string.download_canceled),
+                        Toast.LENGTH_SHORT
+                ).show());
+            } else {
+                // cancel error
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                        this,
+                        R.string.download_canceled_err_because_has_already_completed_normally_or_has_already_finished_with_an_error,
+                        Toast.LENGTH_SHORT
+                ).show());
+            }
+        } else if (response.getState() == DownloadResponse.MUXING) {
+            // if download has completed and is merging
+            for (File cacheFile : response.getCache()) {
+                if (!cacheFile.delete()) {
+                    cacheFile.deleteOnExit();
+                }
+                task.getMuxer().cancel();
+                if (!response.getOutput().delete()) {
+                    response.getOutput().deleteOnExit();
+                }
+            }
             new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                     this,
-                    getString(R.string.download_canceled),
-                    Toast.LENGTH_SHORT
-            ).show());
-        } else {
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                    this,
-                    "Download Canceled Err: because has already completed normally or has already finished with an error",
+                    R.string.merging_canceled,
                     Toast.LENGTH_SHORT
             ).show());
         }
+
         task.getNotification().cancelDownload("");
+
         task.setRunning(false);
+
     }
 
+    // user click retry button to trigger this
     private void retryDownload(int taskId) {
         DownloadTask task = download_tasks.get(taskId);
         if (task == null) {
             return;
         }
-        // cancel original task first
-        if (Objects.requireNonNull(task).getResponse().cancel()) {
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                    this,
-                    getString(R.string.retry_download) + task.fileName,
-                    Toast.LENGTH_SHORT
-            ).show());
-        } else {
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                    this,
-                    "Download Retried Err: when cancel task",
-                    Toast.LENGTH_SHORT
-            ).show());
+        DownloadResponse response = Objects.requireNonNull(task).getResponse();
+        // try cancel original task first
+        if (response.getState() == DownloadResponse.DOWNLOADING) {
+            response.cancel();
+        }else if (response.getState() == DownloadResponse.MUXING) {
+            for (File cacheFile : response.getCache()) {
+                if (!cacheFile.delete()) {
+                    cacheFile.deleteOnExit();
+                }
+                task.getMuxer().cancel();
+                if (!response.getOutput().delete()) {
+                    response.getOutput().deleteOnExit();
+                }
+            }
         }
-        task.setRunning(false);
+        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                this,
+                getString(R.string.retry_download) + task.fileName,
+                Toast.LENGTH_SHORT
+        ).show());
         task.getNotification().clearDownload();
+        task.setRunning(false);
+        task.setThumbnail(null);
         initiateDownload(task);
+    }
+
+    // delete download file after download has finished
+    private void deleteDownload(int taskId) {
+        DownloadTask task = download_tasks.get(taskId);
+        DownloadResponse response = Objects.requireNonNull(task).getResponse();
+        if (response.getState() == DownloadResponse.COMPLETED) {
+            if (response.getOutput().delete()) {
+                task.getNotification().clearDownload();
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                        this,
+                        R.string.file_deleted,
+                        Toast.LENGTH_SHORT
+                ).show());
+            }
+        }
     }
 
     @Override

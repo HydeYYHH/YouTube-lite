@@ -10,8 +10,15 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AudioVideoMuxer {
+
+    private final AtomicBoolean canceled = new AtomicBoolean(false);
+
+    public void cancel() {
+        canceled.set(true);
+    }
 
     @SuppressLint("WrongConstant")
     public void mux(File videoFile, File audioFile, File outputFile) throws IOException {
@@ -35,6 +42,9 @@ public class AudioVideoMuxer {
 
             // add video track
             for (int i = 0; i < videoExtractor.getTrackCount(); ++i) {
+                if (canceled.get()) {
+                    break;
+                }
                 MediaFormat format = videoExtractor.getTrackFormat(i);
                 String mimeType = format.getString(MediaFormat.KEY_MIME);
                 if (mimeType != null && mimeType.startsWith("video/")) {
@@ -46,6 +56,9 @@ public class AudioVideoMuxer {
 
             // add audio track
             for (int i = 0; i < audioExtractor.getTrackCount(); ++i) {
+                if (canceled.get()) {
+                    break;
+                }
                 MediaFormat format = audioExtractor.getTrackFormat(i);
                 String mimeType = format.getString(MediaFormat.KEY_MIME);
                 if (mimeType != null && mimeType.startsWith("audio/")) {
@@ -62,6 +75,9 @@ public class AudioVideoMuxer {
             int videoSampleSize;
 
             while ((videoSampleSize = videoExtractor.readSampleData(buffer, 0)) > 0) {
+                if (canceled.get()) {
+                    break;
+                }
                 bufferInfo.flags = videoExtractor.getSampleFlags();
                 bufferInfo.offset = 0;
                 bufferInfo.size = videoSampleSize;
@@ -76,6 +92,9 @@ public class AudioVideoMuxer {
             MediaCodec.BufferInfo audioBufferInfo = new MediaCodec.BufferInfo();
 
             while ((audioSampleSize = audioExtractor.readSampleData(buffer, 0)) > 0) {
+                if (canceled.get()) {
+                    break;
+                }
                 audioBufferInfo.flags = audioExtractor.getSampleFlags();
                 audioBufferInfo.offset = 0;
                 audioBufferInfo.size = audioSampleSize;

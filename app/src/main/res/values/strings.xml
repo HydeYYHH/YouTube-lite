@@ -20,4 +20,12 @@
     <string name="download_finished_merging">Merging…</string>
     <string name="merge_error">Merge error</string>
     <string name="failed_to_download">Failed to download</string>
+    <string name="download_canceled_err_because_has_already_completed_normally_or_has_already_finished_with_an_error">Download Canceled Err: because has already completed normally or has already finished with an error</string>
+    <string name="failed_to_download_thumbnail">"Failed to download thumbnail:  "</string>
+    <string name="failed_to_load_image">"Failed to load image:  "</string>
+    <string name="failed_to_load_video_details">"Failed to load video details:  "</string>
+    <string name="failed_to_load_available_video_quality">"Failed to load available video quality:  "</string>
+    <string name="merging_canceled">Merging canceled</string>
+    <string name="delete">Delete</string>
+    <string name="file_deleted">File deleted</string>
 </resources>

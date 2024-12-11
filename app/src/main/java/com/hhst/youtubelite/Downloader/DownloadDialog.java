@@ -137,7 +137,10 @@ public class DownloadDialog {
             String fileName = editText.getText().toString().trim();
             String thumbnail = isThumbnailSelected.get() ? details.thumbnail: null;
             downloadService.initiateDownload(new DownloadTask(
-                    selectedQuality.get(), details.audioFormats.get(0), thumbnail, fileName
+                    selectedQuality.get(),
+                    details.audioFormats.get(0),
+                    thumbnail,
+                    String.format("%s-%s", fileName, selectedQuality.get().qualityLabel())
             ));
             dialog.dismiss();
         });
@@ -171,7 +174,7 @@ public class DownloadDialog {
                 Log.e("When fetch thumbnail", Log.getStackTraceString(e));
                 dialogView.post(() ->
                         Toast.makeText(context,
-                                "Failed to load image:  " + e,
+                                context.getString(R.string.failed_to_load_image) + e,
                                 Toast.LENGTH_SHORT).show()
                 );
             }
@@ -192,7 +195,7 @@ public class DownloadDialog {
             } catch (Exception e) {
                 Log.e("When load video name", Log.getStackTraceString(e));
                 dialogView.post(() -> Toast.makeText(
-                        context, "Failed to load video details:  " + e,
+                        context, context.getString(R.string.failed_to_load_video_details) + e,
                         Toast.LENGTH_SHORT).show()
                 );
             }
@@ -259,7 +262,7 @@ public class DownloadDialog {
             } catch (Exception e) {
                 Log.e("When show VideoQualityDialog", Log.getStackTraceString(e));
                 dialogView.post(() -> Toast.makeText(
-                        context, "Failed to load available video quality:  " + e,
+                        context, context.getString(R.string.failed_to_load_available_video_quality) + e,
                         Toast.LENGTH_SHORT).show()
                 );
             }

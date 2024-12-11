@@ -100,13 +100,31 @@ public class DownloadNotification {
 
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
+
+        Intent deleteIntent = new Intent(context, DownloadService.class);
+        deleteIntent.setAction("DELETE_DOWNLOAD");
+        deleteIntent.putExtra("taskId", notificationId);
+        PendingIntent deletePendingIntent = PendingIntent.getService(
+                context, notificationId, deleteIntent, PendingIntent.FLAG_IMMUTABLE
+        );
+
+        NotificationCompat.Action deleteAction = new NotificationCompat.Action.Builder(
+                IconCompat.createWithResource(context, R.drawable.ic_delete),
+                context.getString(R.string.delete),
+                deletePendingIntent
+        ).build();
+
+
         if (builder != null) {
             builder.setContentTitle(context.getString(R.string.download_complete))
                     .setOngoing(false)
                     .setContentText(content)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(content))
                     .setContentIntent(pendingIntent)
-                    .clearActions();
+                    .clearActions()
+                    .setAutoCancel(true)
+                    .addAction(deleteAction)
+                    .setProgress(100, 100, false);
             notificationManager.notify(notificationId, builder.build());
         }
     }
@@ -139,7 +157,7 @@ public class DownloadNotification {
     public void afterDownload() {
         if (builder != null) {
             builder.setContentTitle(context.getString(R.string.download_finished_merging))
-                    .clearActions();
+                    .setProgress(100, 100, true);
 
             notificationManager.notify(notificationId, builder.build());
 

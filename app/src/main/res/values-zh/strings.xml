@@ -19,4 +19,12 @@
     <string name="download_finished_merging">"正在合并... "</string>
     <string name="merge_error">合并出错</string>
     <string name="failed_to_download">下载失败</string>
+    <string name="download_canceled_err_because_has_already_completed_normally_or_has_already_finished_with_an_error">取消下载时出错:  可能是因为该任务已经被取消或者已经完成</string>
+    <string name="failed_to_download_thumbnail">"下载封面出错:  "</string>
+    <string name="failed_to_load_image">"加载图片出错:  "</string>
+    <string name="failed_to_load_video_details">"加载视频详情出错:  "</string>
+    <string name="failed_to_load_available_video_quality">"加载可用视频清晰度时出错:  "</string>
+    <string name="merging_canceled">合并被取消</string>
+    <string name="delete">删除</string>
+    <string name="file_deleted">文件被删除</string>
 </resources>

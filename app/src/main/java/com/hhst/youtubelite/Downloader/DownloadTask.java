@@ -3,6 +3,7 @@ package com.hhst.youtubelite.Downloader;
 
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
+import com.hhst.youtubelite.helper.AudioVideoMuxer;
 
 public class DownloadTask {
     VideoFormat videoFormat;
@@ -12,6 +13,7 @@ public class DownloadTask {
     DownloadNotification notification;
     boolean isRunning = true;
     String thumbnail;
+    AudioVideoMuxer muxer;
 
 
     public DownloadTask(
@@ -47,6 +49,18 @@ public class DownloadTask {
 
     public boolean isRunning() {
         return isRunning;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
+    public void setMuxer(AudioVideoMuxer muxer) {
+        this.muxer = muxer;
+    }
+
+    public AudioVideoMuxer getMuxer() {
+        return muxer;
     }
 
 }
