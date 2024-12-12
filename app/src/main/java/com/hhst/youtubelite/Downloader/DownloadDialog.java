@@ -37,7 +37,7 @@ public class DownloadDialog {
     private DownloadService downloadService;
     private boolean dBound;
 
-    private DownloadDetails details = null;
+    private DownloadDetails details;
     private View dialogView;
 
 

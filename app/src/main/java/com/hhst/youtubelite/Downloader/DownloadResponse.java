@@ -8,6 +8,7 @@ import com.github.kiulian.downloader.downloader.response.Response;
 
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,9 +20,9 @@ public class DownloadResponse {
     private final Context context;
     private final AtomicInteger state;
 
-    private File videoFile = null;
-    private File audioFile = null;
-    private File output = null;
+    private File videoFile;
+    private File audioFile;
+    private File output;
 
     public static final int INITIALIZED = 0;
     public static final int DOWNLOADING = 1;
@@ -57,13 +58,6 @@ public class DownloadResponse {
         } catch (Exception e) {
             Log.e("after download", Log.getStackTraceString(e));
         } finally {
-            // clear cache file
-            if (!audioFile.delete()) {
-                audioFile.deleteOnExit();
-            }
-            if (!videoFile.delete()) {
-                videoFile.deleteOnExit();
-            }
             state.set(COMPLETED);
         }
 
@@ -79,7 +73,7 @@ public class DownloadResponse {
     }
 
     public List<File> getCache() {
-        return List.of(audioFile, videoFile);
+        return Arrays.asList(audioFile, videoFile);
     }
 
     public File getOutput() {

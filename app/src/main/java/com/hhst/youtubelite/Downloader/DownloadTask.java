@@ -5,13 +5,15 @@ import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import com.hhst.youtubelite.helper.AudioVideoMuxer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class DownloadTask {
     VideoFormat videoFormat;
     AudioFormat audioFormat;
     String fileName;
     DownloadResponse response;
     DownloadNotification notification;
-    boolean isRunning = true;
+    AtomicBoolean isRunning = new AtomicBoolean(true);
     String thumbnail;
     AudioVideoMuxer muxer;
 
@@ -44,11 +46,7 @@ public class DownloadTask {
     }
 
     public void setRunning(boolean running) {
-        isRunning = running;
-    }
-
-    public boolean isRunning() {
-        return isRunning;
+        isRunning.set(running);
     }
 
     public void setThumbnail(String thumbnail) {

@@ -158,7 +158,10 @@ public class DownloadService extends Service {
                     new YoutubeProgressCallback<File>() {
                         @Override
                         public void onDownloading(int progress) {
-                            notification.updateProgress(progress);
+                            // stop update notification immediately
+                            if (task.isRunning.get()) {
+                                notification.updateProgress(progress);
+                            }
                         }
 
                         @Override
@@ -212,7 +215,7 @@ public class DownloadService extends Service {
                             task.fileName, output.getPath()),
                     Toast.LENGTH_SHORT
             ).show());
-
+            clearCache(response);
             task.setRunning(false);
         })));
         task.setResponse(response);
@@ -247,15 +250,8 @@ public class DownloadService extends Service {
             }
         } else if (response.getState() == DownloadResponse.MUXING) {
             // if download has completed and is merging
-            for (File cacheFile : response.getCache()) {
-                if (!cacheFile.delete()) {
-                    cacheFile.deleteOnExit();
-                }
-                task.getMuxer().cancel();
-                if (!response.getOutput().delete()) {
-                    response.getOutput().deleteOnExit();
-                }
-            }
+            // try to cancel mux process
+            task.getMuxer().cancel();
             new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                     this,
                     R.string.merging_canceled,
@@ -263,10 +259,15 @@ public class DownloadService extends Service {
             ).show());
         }
 
-        task.getNotification().cancelDownload("");
+        // remove cache files
+        clearCache(response);
+        // remove output file
+        removeOutput(response);
 
+        // Set the running flag to false to stop the task
+        // This will halt the progress updates and allow for the next notification handling
         task.setRunning(false);
-
+        task.getNotification().cancelDownload("");
     }
 
     // user click retry button to trigger this
@@ -280,25 +281,31 @@ public class DownloadService extends Service {
         if (response.getState() == DownloadResponse.DOWNLOADING) {
             response.cancel();
         }else if (response.getState() == DownloadResponse.MUXING) {
-            for (File cacheFile : response.getCache()) {
-                if (!cacheFile.delete()) {
-                    cacheFile.deleteOnExit();
-                }
-                task.getMuxer().cancel();
-                if (!response.getOutput().delete()) {
-                    response.getOutput().deleteOnExit();
-                }
-            }
+            task.getMuxer().cancel();
         }
         new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                 this,
                 getString(R.string.retry_download) + task.fileName,
                 Toast.LENGTH_SHORT
         ).show());
-        task.getNotification().clearDownload();
+        // remove cache and output files
+        clearCache(response);
+        removeOutput(response);
+
+        // Set the running flag to false to stop the task
+        // This will halt the progress updates and allow for the next notification handling
         task.setRunning(false);
-        task.setThumbnail(null);
-        initiateDownload(task);
+
+        // dismiss the notification
+        task.getNotification().clearDownload();
+
+        // initiate new download task for the video
+        initiateDownload(new DownloadTask(
+                task.videoFormat,
+                task.audioFormat,
+                null,
+                task.fileName
+        ));
     }
 
     // delete download file after download has finished
@@ -306,8 +313,11 @@ public class DownloadService extends Service {
         DownloadTask task = download_tasks.get(taskId);
         DownloadResponse response = Objects.requireNonNull(task).getResponse();
         if (response.getState() == DownloadResponse.COMPLETED) {
+            // only triggered this under the COMPLETED flag
             if (response.getOutput().delete()) {
+                // dismiss the notification
                 task.getNotification().clearDownload();
+                // show toast
                 new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                         this,
                         R.string.file_deleted,
@@ -320,10 +330,28 @@ public class DownloadService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (!download_tasks.isEmpty()) {
+            Objects.requireNonNull(download_tasks.get(0)).getNotification().clearAll();
+
+        }
         if (download_executor != null && !download_executor.isShutdown()) {
             download_executor.shutdownNow();
         }
     }
 
+    private void clearCache(DownloadResponse response) {
+        for (File cacheFile : response.getCache()) {
+            if (cacheFile != null && !cacheFile.delete()) {
+                cacheFile.deleteOnExit();
+            }
+        }
+    }
+
+    private void removeOutput(DownloadResponse response) {
+        File output = response.getOutput();
+        if (output != null && !output.delete()) {
+            output.deleteOnExit();
+        }
+    }
 
 }

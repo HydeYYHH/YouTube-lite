@@ -23,6 +23,8 @@ public class Downloader {
 
     public static DownloadDetails info(String video_id) {
 
+        Log.d("get video id", String.valueOf(video_id));
+
         RequestVideoInfo requestVideoInfo = new RequestVideoInfo(video_id)
                 .callback(new YoutubeCallback<VideoInfo>() {
                     @Override

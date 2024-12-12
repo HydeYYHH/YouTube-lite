@@ -19,7 +19,7 @@ public class DownloadNotification {
     Context context;
     private final NotificationManager notificationManager;
     private static final String CHANNEL_ID = "download_channel";
-    private NotificationCompat.Builder builder = null;
+    private NotificationCompat.Builder builder;
     private final int notificationId;
 
 
@@ -147,6 +147,7 @@ public class DownloadNotification {
             builder.setContentTitle(context.getString(R.string.download_canceled) + content)
                     .setOngoing(false)
                     .clearActions()
+                    .setProgress(0, 0, false)
                     .addAction(retryAction);
             notificationManager.notify(notificationId, builder.build());
         }
@@ -167,6 +168,10 @@ public class DownloadNotification {
 
     public void clearDownload() {
         notificationManager.cancel(notificationId);
+    }
+
+    public void clearAll() {
+        notificationManager.cancelAll();
     }
 
 }
