@@ -11,10 +11,10 @@ YouTube lite
 * **Ad Blocking**
 * **video and thumbnail download**
 * **Background Play**
-* **show dislike count, help you make informed decisions**
+* **show dislike count**
 * **Play Progress & Video Quality Memory**
-
-
+  
+  
 
 ## TODOs
 
@@ -23,13 +23,11 @@ YouTube lite
 - [x] video download
 
 - [ ] ...
-
-
-
-
+  
+  
+  
+  
 
 ## Contributing
 
 If you encounter a bug, please check the GitHub repository to see if an issue has already been reported. If not, feel free to open a new one.
-
-
