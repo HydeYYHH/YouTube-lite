@@ -1,1 +1,0 @@
-A WebView wrapper for YouTube that provides additional features.
