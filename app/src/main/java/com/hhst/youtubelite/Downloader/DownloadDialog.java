@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -229,12 +230,13 @@ public class DownloadDialog {
                 if (details == null) {
                     details = Downloader.info(video_id);
                 }
+                long audio_size = details.getAudioFormats().get(0).contentLength();
                 details.getVideoFormats().forEach(it -> {
                     // avoid duplicate labels
                     if (!quality_labels.contains(it.qualityLabel())) {
                         quality_labels.add(it.qualityLabel());
                         CheckBox choice = new CheckBox(context);
-                        choice.setText(it.qualityLabel());
+                        choice.setText(String.format("%s (%s)", it.qualityLabel(), formatSize(audio_size + it.contentLength())));
                         choice.setLayoutParams(
                                 new RadioGroup.LayoutParams(
                                         RadioGroup.LayoutParams.MATCH_PARENT,
@@ -284,6 +286,29 @@ public class DownloadDialog {
 
 
         qualityDialog.show();
+    }
+
+    public static String formatSize(long length) {
+        if (length < 0) {
+            return "Invalid size";
+        }
+
+        if (length == 0) {
+            return "0";
+        }
+
+        int unitIndex = 0;
+
+
+        String[] UNITS = {"B", "KB", "MB", "GB", "TB"};
+        double size = length;
+
+        while (size >= 1024 && unitIndex < UNITS.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return String.format(Locale.US, "%.1f %s", size, UNITS[unitIndex]);
     }
 
 

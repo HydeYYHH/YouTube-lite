@@ -21,9 +21,12 @@ public class AudioVideoMuxer {
     }
 
     @SuppressLint("WrongConstant")
-    public void mux(File videoFile, File audioFile, File outputFile) throws IOException {
+    public void mux(File videoFile, File audioFile, File outputFile) throws IOException, InterruptedException {
 
         try {
+            // for test
+            long point = System.currentTimeMillis();
+
             // delete output file if it exists
             if (outputFile.exists() && !outputFile.delete()) {
                 return;
@@ -42,6 +45,9 @@ public class AudioVideoMuxer {
             int videoTrackIndex = -1;
             int audioTrackIndex = -1;
 
+            Log.d("test time cost 1", String.valueOf(System.currentTimeMillis() - point));
+            point = System.currentTimeMillis();
+
             // add video track
             for (int i = 0; i < videoExtractor.getTrackCount(); ++i) {
                 if (canceled.get()) {
@@ -55,6 +61,9 @@ public class AudioVideoMuxer {
                     break;
                 }
             }
+
+            Log.d("test time cost 2", String.valueOf(System.currentTimeMillis() - point));
+            point = System.currentTimeMillis();
 
             // add audio track
             for (int i = 0; i < audioExtractor.getTrackCount(); ++i) {
@@ -70,30 +79,34 @@ public class AudioVideoMuxer {
                 }
             }
 
+            Log.d("test time cost 3", String.valueOf(System.currentTimeMillis() - point));
+            point = System.currentTimeMillis();
+
             // start to mux
             muxer.start();
 
             // Buffer and MediaCodec info
-            ByteBuffer buffer = ByteBuffer.allocate(4 * 1024 * 1024);
+            ByteBuffer video_buffer = ByteBuffer.allocateDirect(2 * 1024 * 1024);
+            ByteBuffer audio_buffer = ByteBuffer.allocateDirect(2 * 1024 * 1024);
             MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
             MediaCodec.BufferInfo audioBufferInfo = new MediaCodec.BufferInfo();
 
-            // Start parallel extraction for video and audio data
+            // Use threads for video and audio muxing
             int finalVideoTrackIndex = videoTrackIndex;
             Thread videoThread = new Thread(() -> {
                 try {
                     int videoSampleSize;
-                    while ((videoSampleSize = videoExtractor.readSampleData(buffer, 0)) > 0 &&
+                    while ((videoSampleSize = videoExtractor.readSampleData(video_buffer, 0)) > 0 &&
                             !canceled.get()) {
                         bufferInfo.flags = videoExtractor.getSampleFlags();
                         bufferInfo.offset = 0;
                         bufferInfo.size = videoSampleSize;
                         bufferInfo.presentationTimeUs = videoExtractor.getSampleTime();
-                        muxer.writeSampleData(finalVideoTrackIndex, buffer, bufferInfo);
+                        muxer.writeSampleData(finalVideoTrackIndex, video_buffer, bufferInfo);
                         videoExtractor.advance();
                     }
                 } catch (Exception e) {
-                    Log.e("muxer", Log.getStackTraceString(e));
+                    Log.e("Video Thread Error", Log.getStackTraceString(e));
                 }
             });
 
@@ -101,29 +114,30 @@ public class AudioVideoMuxer {
             Thread audioThread = new Thread(() -> {
                 try {
                     int audioSampleSize;
-                    while ((audioSampleSize = audioExtractor.readSampleData(buffer, 0)) > 0 && !canceled.get()) {
+                    while ((audioSampleSize = audioExtractor.readSampleData(audio_buffer, 0)) > 0 &&
+                            !canceled.get()) {
                         audioBufferInfo.flags = audioExtractor.getSampleFlags();
                         audioBufferInfo.offset = 0;
                         audioBufferInfo.size = audioSampleSize;
                         audioBufferInfo.presentationTimeUs = audioExtractor.getSampleTime();
-                        muxer.writeSampleData(finalAudioTrackIndex, buffer, audioBufferInfo);
+                        muxer.writeSampleData(finalAudioTrackIndex, audio_buffer, audioBufferInfo);
                         audioExtractor.advance();
                     }
                 } catch (Exception e) {
-                    Log.e("muxer", Log.getStackTraceString(e));
+                    Log.e("Audio Thread Error", Log.getStackTraceString(e));
                 }
             });
 
+            // Start both threads
             videoThread.start();
             audioThread.start();
 
-            // Wait for both threads to complete
-            try {
-                videoThread.join();
-                audioThread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            // Wait for both threads to finish
+            videoThread.join();
+            audioThread.join();
+
+            Log.d("test time cost 4", String.valueOf(System.currentTimeMillis() - point));
+            point = System.currentTimeMillis();
 
             // release resources
             videoExtractor.release();

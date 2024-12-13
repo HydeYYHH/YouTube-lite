@@ -193,7 +193,7 @@ public class DownloadService extends Service {
                 AudioVideoMuxer muxer = new AudioVideoMuxer();
                 task.setMuxer(muxer);
                 muxer.mux(video, audio, output);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 notification.cancelDownload(getString(R.string.merge_error));
                 new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
                         context,
