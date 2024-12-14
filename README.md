@@ -1,32 +1,32 @@
 YouTube lite
 ============
 
-* YouTube lite is a lightweight Android WebView wrapper for YouTube, offering many additional features such as ad blocking, background play, video download and playback progress memory.
+* YouTube lite is a lightweight Android WebView wrapper for YouTube, offering many additional features such as ads blocking, background play, video download and playback progress memory.
   
   
 
 ## Features
 
-- **super lightweight**
+* **super lightweight**
 * **Ad Blocking**
-* **video and thumbnail download**
+* **video download**
 * **Background Play**
 * **show dislike count**
 * **Play Progress & Video Quality Memory**
   
   
 
-## TODOs
+## Screenshots
 
-- [x] show dislike count
+![](.\fastlane\metadata\android\en-US\images\screenshot1.jpg)
 
-- [x] video download
+![](.\fastlane\metadata\android\en-US\images\screenshot2.jpg)
 
-- [ ] ...
-  
-  
-  
-  
+![](.\fastlane\metadata\android\en-US\images\screenshot3.jpg)
+
+
+
+
 
 ## Contributing
 
