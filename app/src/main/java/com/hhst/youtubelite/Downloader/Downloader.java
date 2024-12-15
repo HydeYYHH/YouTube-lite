@@ -71,68 +71,78 @@ public class Downloader {
     ) {
         YoutubeDownloader downloader = new YoutubeDownloader();
 
-        long audioSize = audioFormat.contentLength();
-        long videoSize = videoFormat.contentLength();
+        long audioSize = audioFormat == null ? 0 : audioFormat.contentLength();
+        long videoSize = videoFormat == null ? 0 : videoFormat.contentLength();
         float audioWeight = (float) audioSize / (audioSize + videoSize);
         float videoWeight = (float) videoSize / (audioSize + videoSize);
 
         AtomicInteger audioProgress = new AtomicInteger(0);
         AtomicInteger videoProgress = new AtomicInteger(0);
 
-        RequestVideoFileDownload audioRequest = new RequestVideoFileDownload(audioFormat)
-                .callback(new YoutubeProgressCallback<File>() {
-                    @Override
-                    public void onDownloading(int progress) {
-                        audioProgress.set(progress);
-                        callback.onDownloading((int)(videoProgress.get() * videoWeight + progress * audioWeight));
-                    }
-
-                    @Override
-                    public void onFinished(File data) {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable throwable) {
-                        callback.onError(throwable);
-                    }
-                })
-                .renameTo(fileName)
-                .saveTo(context.getCacheDir())
-                .overwriteIfExists(true)
-                .maxRetries(5)
-                .async();
-
-        Response<File> audioResponse = downloader.downloadVideoFile(audioRequest);
-
-        RequestVideoFileDownload videoRequest = new RequestVideoFileDownload(videoFormat)
-                .callback(new YoutubeProgressCallback<File>() {
-                    @Override
-                    public void onDownloading(int progress) {
-                        videoProgress.set(progress);
-                        callback.onDownloading((int)(progress * videoWeight + audioProgress.get() * audioWeight));
-                        if (progress == 100 && audioProgress.get() == 100) {
-                            callback.onDownloading(100);
+        Response<File> audioResponse = null;
+        if (audioFormat != null) {
+            RequestVideoFileDownload audioRequest = new RequestVideoFileDownload(audioFormat)
+                    .callback(new YoutubeProgressCallback<File>() {
+                        @Override
+                        public void onDownloading(int progress) {
+                            audioProgress.set(progress);
+                            callback.onDownloading((int)(videoProgress.get() * videoWeight + progress * audioWeight));
+                            if (progress == 100 && videoProgress.get() == 100) {
+                                callback.onDownloading(100);
+                            }
                         }
-                    }
 
-                    @Override
-                    public void onFinished(File data) {
+                        @Override
+                        public void onFinished(File data) {
 
-                    }
+                        }
 
-                    @Override
-                    public void onError(Throwable throwable) {
-                        callback.onError(throwable);
-                    }
-                })
-                .renameTo(fileName)
-                .saveTo(context.getCacheDir())
-                .overwriteIfExists(true)
-                .maxRetries(5)
-                .async();
+                        @Override
+                        public void onError(Throwable throwable) {
+                            callback.onError(throwable);
+                        }
+                    })
+                    .renameTo(fileName)
+                    .saveTo(context.getCacheDir())
+                    .overwriteIfExists(false)
+                    .maxRetries(5)
+                    .async();
 
-        Response<File> videoResponse = downloader.downloadVideoFile(videoRequest);
+            audioResponse = downloader.downloadVideoFile(audioRequest);
+        }
+
+        Response<File> videoResponse = null;
+        if (videoFormat != null) {
+            RequestVideoFileDownload videoRequest = new RequestVideoFileDownload(videoFormat)
+                    .callback(new YoutubeProgressCallback<File>() {
+                        @Override
+                        public void onDownloading(int progress) {
+                            videoProgress.set(progress);
+                            callback.onDownloading((int)(progress * videoWeight + audioProgress.get() * audioWeight));
+                            if (progress == 100 && audioProgress.get() == 100) {
+                                callback.onDownloading(100);
+                            }
+                        }
+
+                        @Override
+                        public void onFinished(File data) {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                            callback.onError(throwable);
+                        }
+                    })
+                    .renameTo(fileName)
+                    .saveTo(context.getCacheDir())
+                    .overwriteIfExists(false)
+                    .maxRetries(5)
+                    .async();
+
+            videoResponse = downloader.downloadVideoFile(videoRequest);
+        }
+
 
         return new DownloadResponse(context, videoResponse, audioResponse, outputDir);
     }

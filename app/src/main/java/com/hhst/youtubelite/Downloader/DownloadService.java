@@ -1,7 +1,6 @@
 package com.hhst.youtubelite.Downloader;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -21,6 +20,8 @@ import com.hhst.youtubelite.R;
 import com.hhst.youtubelite.helper.AudioVideoMuxer;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -74,36 +75,37 @@ public class DownloadService extends Service {
         return new DownloadBinder();
     }
 
-
-    public void initiateDownload(DownloadTask task) {
-        File outputDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                getString(R.string.app_name));
-
-        if (!outputDir.exists() && !outputDir.mkdir()) {
-            return;
-        }
-
-        // replace illegal character in filename
+    private String sanitizeFileName(String fileName) {
         Pattern INVALID_FILENAME_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]");
-        task.fileName = INVALID_FILENAME_PATTERN.matcher(task.fileName).replaceAll("_");
+        return INVALID_FILENAME_PATTERN.matcher(fileName).replaceAll("_");
+    }
 
-        // download thumbnail
-        if (task.thumbnail != null) {
+    private InputStream downloadFromURL(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setDoInput(true);
+        connection.connect();
+        return connection.getInputStream();
+    }
+
+    private void showToast(String content) {
+        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                this,
+                content,
+                Toast.LENGTH_SHORT
+        ).show());
+    }
+
+    private void downloadThumbnail(String thumbnail, File outputFile) {
+        if (thumbnail != null) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(() -> {
                 InputStream input = null;
                 OutputStream output = null;
                 try {
-                    URL url = new URL(task.thumbnail);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setDoInput(true);
-                    connection.connect();
-                    input = connection.getInputStream();
-
+                    input = downloadFromURL(new URL(thumbnail));
                     // convert to bitmap
                     Bitmap bitmap = BitmapFactory.decodeStream(input);
 
-                    File outputFile = new File(outputDir, task.fileName + ".jpg");
                     output = Files.newOutputStream(outputFile.toPath());
                     // output as JPEG
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
@@ -111,19 +113,11 @@ public class DownloadService extends Service {
 
                     // notify to scan
                     MediaScannerConnection.scanFile(this, new String[]{outputFile.getAbsolutePath()}, null, null);
-                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                            this,
-                            getString(R.string.thumbnail_has_been_saved_to) + outputFile,
-                            Toast.LENGTH_SHORT
-                    ).show());
+                    showToast(getString(R.string.thumbnail_has_been_saved_to) + outputFile);
 
                 } catch (Exception e) {
                     Log.e("When download thumbnail", Log.getStackTraceString(e));
-                    new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                            this,
-                            getString(R.string.failed_to_download_thumbnail) + e,
-                            Toast.LENGTH_SHORT
-                    ).show());
+                    showToast(getString(R.string.failed_to_download_thumbnail) + e);
                 }  finally {
                     try {
                         if (input != null) {
@@ -138,90 +132,147 @@ public class DownloadService extends Service {
                 }
             });
         }
+    }
 
-        // download video
-        if (task.videoFormat == null) {
-            return;
-        }
-        // generate task id
+
+    private void scheduleDownload(DownloadTask task) {
+        // Generate common properties
+        String fileName = task.isAudio ? String.format("(audio only) %s", task.fileName)
+                : String.format("%s-%s", task.fileName, task.videoFormat.qualityLabel());
         int taskId = download_tasks.size();
-        Context context = this;
-        DownloadNotification notification = new DownloadNotification(context, taskId);
-        // show notification
-        notification.showNotification(task.fileName, 0);
+        DownloadNotification notification = new DownloadNotification(this, taskId);
 
-        // get download response
-        DownloadResponse response = Downloader.download(
-                    context,
-                    task.videoFormat,
-                    task.audioFormat,
-                    new YoutubeProgressCallback<File>() {
-                        @Override
-                        public void onDownloading(int progress) {
-                            // stop update notification immediately
-                            if (task.isRunning.get()) {
-                                notification.updateProgress(progress);
-                            }
-                        }
+        // Show notification
+        notification.showNotification(fileName, 0);
 
-                        @Override
-                        public void onFinished(File data) {
-
-                        }
-
-                        @Override
-                        public void onError(Throwable throwable) {
-                            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                                    context,
-                                    getString(R.string.failed_to_download) + throwable,
-                                    Toast.LENGTH_SHORT
-                            ).show());
-                            task.setRunning(false);
-                            task.getNotification().cancelDownload(getString(R.string.failed_to_download));
-                        }
-                    },
-                    task.fileName,
-                    outputDir
-            );
-
-        // submit task and start to download video
-        download_executor.submit(() -> response.execute(((video, audio, output) -> {
-            // show notification for merging
-            notification.afterDownload();
-            try {
-                // for audio and video merging
-                AudioVideoMuxer muxer = new AudioVideoMuxer();
-                task.setMuxer(muxer);
-                muxer.mux(video, audio, output);
-            } catch (IOException | InterruptedException e) {
-                notification.cancelDownload(getString(R.string.merge_error));
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                        context,
-                        getString(R.string.merge_error),
-                        Toast.LENGTH_SHORT
-                ).show());
+        // Create progress callback
+        YoutubeProgressCallback<File> callback = new YoutubeProgressCallback<File>() {
+            @Override
+            public void onDownloading(int progress) {
+                if (task.isRunning.get()) {
+                    notification.updateProgress(progress);
+                }
             }
 
-            // update notification
-            notification.completeDownload(
-                    String.format(getString(R.string.download_finished), task.fileName, output.getPath()),
-                    output,
-                    "video/*"
-            );
-            // show a toast for user to notify download complete
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                    context,
-                    String.format(getString(R.string.download_finished),
-                            task.fileName, output.getPath()),
-                    Toast.LENGTH_SHORT
-            ).show());
+            @Override
+            public void onFinished(File data) {
+                // Handle completion
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                showToast(getString(R.string.failed_to_download) + e);
+                task.setRunning(false);
+                task.getNotification().cancelDownload(getString(R.string.failed_to_download));
+            }
+        };
+
+        // Prepare download response
+        DownloadResponse response = Downloader.download(
+                this,
+                task.isAudio ? null : task.videoFormat,
+                task.audioFormat,
+                callback,
+                task.fileName,
+                task.getOutput()
+        );
+
+        // Submit task for execution
+        download_executor.submit(() -> response.execute((video, audio, output) -> {
+            // on download finished
+            if (task.isAudio) {
+                // Move audio file
+                try {
+                    copyFile(audio, output);
+                } catch (IOException e) {
+                    Log.e("Error copying audio file", Log.getStackTraceString(e));
+                }
+
+                notification.completeDownload(
+                        String.format(getString(R.string.download_finished), fileName, output.getPath()),
+                        output,
+                        "audio/*"
+                );
+            } else {
+                notification.afterDownload();
+                try {
+                    AudioVideoMuxer muxer = new AudioVideoMuxer();
+                    task.setMuxer(muxer);
+                    muxer.mux(video, audio, output);
+                } catch (IOException | InterruptedException e) {
+                    notification.cancelDownload(getString(R.string.merge_error));
+                    showToast(getString(R.string.merge_error));
+                    return;
+                }
+
+                notification.completeDownload(
+                        String.format(getString(R.string.download_finished), fileName, output.getPath()),
+                        output,
+                        "video/*"
+                );
+            }
+
+            showToast(String.format(getString(R.string.download_finished), fileName, output.getPath()));
             clearCache(response);
             task.setRunning(false);
-        })));
+        }));
+
+        // Finalize task setup
         task.setResponse(response);
         task.setNotification(notification);
-        // add task to list for future reference
         download_tasks.put(taskId, task);
+    }
+
+
+
+    private void copyFile(File source, File destination) throws IOException {
+        try (FileInputStream input = new FileInputStream(source);
+             FileOutputStream output = new FileOutputStream(destination)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = input.read(buffer)) != -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+        }
+    }
+
+    public void initiateDownload(DownloadTask task) {
+        File outputDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getString(R.string.app_name));
+
+        if (!outputDir.exists() && !outputDir.mkdir()) {
+            return;
+        }
+
+        // replace illegal character in filename
+        task.fileName = sanitizeFileName(task.fileName);
+
+        // download thumbnail
+        downloadThumbnail(task.thumbnail, new File(outputDir, task.fileName + ".jpg"));
+
+        // download audio
+        if (task.isAudio) {
+            scheduleDownload(new DownloadTask(
+                    null,
+                    task.audioFormat,
+                    null,
+                    task.fileName,
+                    true,
+                    outputDir
+
+            ));
+        }
+        // download video
+        if (task.videoFormat != null) {
+            scheduleDownload(new DownloadTask(
+                    task.videoFormat,
+                    task.audioFormat,
+                    null,
+                    task.fileName,
+                    false,
+                    outputDir
+            ));
+        }
     }
 
 
@@ -235,28 +286,16 @@ public class DownloadService extends Service {
 
         if (response.getState() == DownloadResponse.DOWNLOADING) {
             if (response.cancel()) {
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                        this,
-                        getString(R.string.download_canceled),
-                        Toast.LENGTH_SHORT
-                ).show());
+                showToast(getString(R.string.download_canceled));
             } else {
                 // cancel error
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                        this,
-                        R.string.download_canceled_err_because_has_already_completed_normally_or_has_already_finished_with_an_error,
-                        Toast.LENGTH_SHORT
-                ).show());
+                showToast(getString(R.string.download_canceled_err));
             }
         } else if (response.getState() == DownloadResponse.MUXING) {
             // if download has completed and is merging
             // try to cancel mux process
             task.getMuxer().cancel();
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                    this,
-                    R.string.merging_canceled,
-                    Toast.LENGTH_SHORT
-            ).show());
+            showToast(getString(R.string.merging_canceled));
         }
 
         // remove cache files
@@ -283,11 +322,7 @@ public class DownloadService extends Service {
         }else if (response.getState() == DownloadResponse.MUXING) {
             task.getMuxer().cancel();
         }
-        new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                this,
-                getString(R.string.retry_download) + task.fileName,
-                Toast.LENGTH_SHORT
-        ).show());
+        showToast(getString(R.string.retry_download) + task.fileName);
         // remove cache and output files
         clearCache(response);
         removeOutput(response);
@@ -299,13 +334,27 @@ public class DownloadService extends Service {
         // dismiss the notification
         task.getNotification().clearDownload();
 
-        // initiate new download task for the video
-        initiateDownload(new DownloadTask(
-                task.videoFormat,
-                task.audioFormat,
-                null,
-                task.fileName
-        ));
+        if (task.isAudio) {
+            // initiate new download task for the video
+            initiateDownload(new DownloadTask(
+                    null,
+                    task.audioFormat,
+                    null,
+                    task.fileName,
+                    true,
+                    null
+            ));
+        } else {
+            initiateDownload(new DownloadTask(
+                    task.videoFormat,
+                    task.audioFormat,
+                    null,
+                    task.fileName,
+                    false,
+                    null
+            ));
+        }
+
     }
 
     // delete download file after download has finished
@@ -318,30 +367,14 @@ public class DownloadService extends Service {
                 // dismiss the notification
                 task.getNotification().clearDownload();
                 // show toast
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
-                        this,
-                        R.string.file_deleted,
-                        Toast.LENGTH_SHORT
-                ).show());
+                showToast(getString(R.string.file_deleted));
             }
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (!download_tasks.isEmpty()) {
-            Objects.requireNonNull(download_tasks.get(0)).getNotification().clearAll();
-
-        }
-        if (download_executor != null && !download_executor.isShutdown()) {
-            download_executor.shutdownNow();
         }
     }
 
     private void clearCache(DownloadResponse response) {
         for (File cacheFile : response.getCache()) {
-            if (cacheFile != null && !cacheFile.delete()) {
+            if (cacheFile != null) {
                 cacheFile.deleteOnExit();
             }
         }
@@ -352,6 +385,25 @@ public class DownloadService extends Service {
         if (output != null && !output.delete()) {
             output.deleteOnExit();
         }
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        stopSelf();
+        return super.onUnbind(intent);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d("download service stop", "onDestroy");
+        if (!download_tasks.isEmpty()) {
+            Objects.requireNonNull(download_tasks.get(0)).getNotification().clearAll();
+
+        }
+        if (download_executor != null && !download_executor.isShutdown()) {
+            download_executor.shutdownNow();
+        }
+        super.onDestroy();
     }
 
 }

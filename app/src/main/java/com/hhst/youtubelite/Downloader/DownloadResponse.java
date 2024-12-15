@@ -46,13 +46,20 @@ public class DownloadResponse {
 
         state.set(DOWNLOADING);
         audioFile = audioResponse.data();
-        videoFile = videoResponse.data();
-
-        output = new File(outputDir, videoFile.getName());
+        if (videoResponse != null) {
+            videoFile = videoResponse.data();
+            output = new File(outputDir, videoFile.getName());
+        } else {
+            output = new File(outputDir, audioFile.getName());
+        }
 
         try {
-            state.set(MUXING);
-            onFinish.apply(videoFile, audioFile, output);
+            if (videoResponse != null) {
+                state.set(MUXING);
+            }
+            if (onFinish != null) {
+                onFinish.apply(videoFile, audioFile, output);
+            }
             // notify system media library
             MediaScannerConnection.scanFile(context, new String[]{output.getAbsolutePath()}, null, null);
         } catch (Exception e) {
@@ -65,7 +72,12 @@ public class DownloadResponse {
 
 
     public boolean cancel() {
-        return audioResponse.cancel() || videoResponse.cancel();
+        boolean audioCanceled = audioResponse.cancel();
+        boolean videoCanceled = false;
+        if (videoResponse != null) {
+            videoCanceled = videoResponse.cancel();
+        }
+        return audioCanceled || videoCanceled;
     }
 
     public int getState() {

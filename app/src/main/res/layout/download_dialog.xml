@@ -30,34 +30,52 @@
         tools:ignore="LabelFor" />
 
 
-    <LinearLayout
-        android:id="@+id/button_group"
-        style="?android:attr/buttonBarStyle"
+    <HorizontalScrollView
+        android:id="@+id/button_group_scroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:orientation="horizontal">
+        android:scrollbars="none">
 
-
-        <Button
-            android:id="@+id/button_video"
-            style="@style/Widget.Material3.Button"
+        <LinearLayout
+            android:id="@+id/button_group"
+            style="?android:attr/buttonBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_marginEnd="10dp"
-            android:text="@string/video" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_video"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginEnd="10dp"
+                android:text="@string/video" />
+
+            <Button
+                android:id="@+id/button_audio"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginEnd="10dp"
+                android:text="@string/audio_only" />
+
+            <Button
+                android:id="@+id/button_thumbnail"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginEnd="10dp"
+                android:text="@string/thumbnail" />
 
 
-        <Button
-            android:id="@+id/button_thumbnail"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/thumbnail" />
+        </LinearLayout>
 
-    </LinearLayout>
+    </HorizontalScrollView>
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"

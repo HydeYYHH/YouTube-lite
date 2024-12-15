@@ -85,6 +85,7 @@ public class DownloadDialog {
         EditText editText = dialogView.findViewById(R.id.download_edit_text);
         Button buttonVideo = dialogView.findViewById(R.id.button_video);
         Button buttonThumbnail = dialogView.findViewById(R.id.button_thumbnail);
+        Button buttonAudio = dialogView.findViewById(R.id.button_audio);
         Button buttonCancel = dialogView.findViewById(R.id.button_cancel);
         Button buttonDownload = dialogView.findViewById(R.id.button_download);
 
@@ -97,11 +98,13 @@ public class DownloadDialog {
         // state
         AtomicBoolean isVideoSelected = new AtomicBoolean(false);
         AtomicBoolean isThumbnailSelected = new AtomicBoolean(false);
+        AtomicBoolean isAudioSelected = new AtomicBoolean(false);
         AtomicReference<VideoFormat> selectedQuality = new AtomicReference<>(null);
 
         // set button default background color
         buttonVideo.setBackgroundColor(context.getColor(android.R.color.darker_gray));
         buttonThumbnail.setBackgroundColor(context.getColor(android.R.color.darker_gray));
+        buttonAudio.setBackgroundColor(context.getColor(android.R.color.darker_gray));
 
         // on video button clicked
         buttonVideo.setOnClickListener(v -> showVideoQualityDialog(selectedQuality, quality_selected -> {
@@ -124,9 +127,20 @@ public class DownloadDialog {
             }
         });
 
+        // on audio-only button clicked
+        buttonAudio.setOnClickListener(v -> {
+            isAudioSelected.set(!isAudioSelected.get());
+            buttonAudio.setSelected(isAudioSelected.get());
+            if (isAudioSelected.get()) {
+                buttonAudio.setBackgroundColor(context.getColor(android.R.color.holo_blue_dark));
+            } else {
+                buttonAudio.setBackgroundColor(context.getColor(android.R.color.darker_gray));
+            }
+        });
+
         // on download button clicked
         buttonDownload.setOnClickListener(v -> {
-            if (!isVideoSelected.get() && !isThumbnailSelected.get()) {
+            if (!isVideoSelected.get() && !isThumbnailSelected.get() && !isAudioSelected.get()) {
                 dialogView.post(() -> Toast.makeText(
                         context,
                         R.string.select_something_first,
@@ -141,7 +155,9 @@ public class DownloadDialog {
                     selectedQuality.get(),
                     details.audioFormats.get(0),
                     thumbnail,
-                    String.format("%s-%s", fileName, selectedQuality.get().qualityLabel())
+                    fileName,
+                    isAudioSelected.get(),
+                    null
             ));
             dialog.dismiss();
         });
