@@ -18,11 +18,9 @@ YouTube lite
 
 ## Screenshots
 
-![](.\fastlane\metadata\android\en-US\images\screenshot1.jpg)
+<img src="https://github.com/HydeYYHH/YouTube-lite/blob/main/fastlane/metadata/android/en-US/images/screenshot1.jpg" width="250"><img src="https://github.com/HydeYYHH/YouTube-lite/blob/main/fastlane/metadata/android/en-US/images/screenshot2.jpg" width="250"><img src="https://github.com/HydeYYHH/YouTube-lite/blob/main/fastlane/metadata/android/en-US/images/screenshot3.jpg" width="250">
 
-![](.\fastlane\metadata\android\en-US\images\screenshot2.jpg)
 
-![](.\fastlane\metadata\android\en-US\images\screenshot3.jpg)
 
 
 
