@@ -1,13 +1,9 @@
 package com.hhst.youtubelite.Downloader;
 
 import android.app.AlertDialog;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -19,6 +15,7 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
+import com.hhst.youtubelite.MainActivity;
 import com.hhst.youtubelite.R;
 
 import java.io.InputStream;
@@ -35,8 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DownloadDialog {
     private final String video_id;
     private final Context context;
-    private DownloadService downloadService;
-    private boolean dBound;
 
     private DownloadDetails details;
     private View dialogView;
@@ -46,22 +41,6 @@ public class DownloadDialog {
     public DownloadDialog(String video_id, Context context) {
         this.video_id = video_id;
         this.context = context;
-        dBound = false;
-        ServiceConnection connection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-                downloadService = ((DownloadService.DownloadBinder) iBinder).getService();
-                dBound = true;
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName componentName) {
-                dBound = false;
-            }
-        };
-
-        Intent intent = new Intent(context, DownloadService.class);
-        context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
 
         if (details == null) {
             details = Downloader.info(video_id);
@@ -151,7 +130,7 @@ public class DownloadDialog {
 
             String fileName = editText.getText().toString().trim();
             String thumbnail = isThumbnailSelected.get() ? details.thumbnail: null;
-            downloadService.initiateDownload(new DownloadTask(
+            ((MainActivity)context).downloadService.initiateDownload(new DownloadTask(
                     selectedQuality.get(),
                     details.audioFormats.get(0),
                     thumbnail,

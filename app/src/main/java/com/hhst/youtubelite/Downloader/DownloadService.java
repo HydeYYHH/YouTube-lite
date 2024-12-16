@@ -61,9 +61,9 @@ public class DownloadService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    class DownloadBinder extends Binder {
+    public class DownloadBinder extends Binder {
 
-        DownloadService getService() {
+        public DownloadService getService() {
             return DownloadService.this;
         }
 
@@ -134,7 +134,6 @@ public class DownloadService extends Service {
         }
     }
 
-
     private void scheduleDownload(DownloadTask task) {
         // Generate common properties
         String fileName = task.isAudio ? String.format("(audio only) %s", task.fileName)
@@ -161,6 +160,7 @@ public class DownloadService extends Service {
 
             @Override
             public void onError(Throwable e) {
+                Log.e("on downloading", Log.getStackTraceString(e));
                 showToast(getString(R.string.failed_to_download) + e);
                 task.setRunning(false);
                 task.getNotification().cancelDownload(getString(R.string.failed_to_download));
@@ -178,6 +178,9 @@ public class DownloadService extends Service {
         );
 
         // Submit task for execution
+        if (response == null) {
+            return;
+        }
         download_executor.submit(() -> response.execute((video, audio, output) -> {
             // on download finished
             if (task.isAudio) {
@@ -213,7 +216,6 @@ public class DownloadService extends Service {
             }
 
             showToast(String.format(getString(R.string.download_finished), fileName, output.getPath()));
-            clearCache(response);
             task.setRunning(false);
         }));
 
@@ -298,8 +300,6 @@ public class DownloadService extends Service {
             showToast(getString(R.string.merging_canceled));
         }
 
-        // remove cache files
-        clearCache(response);
         // remove output file
         removeOutput(response);
 
@@ -323,8 +323,7 @@ public class DownloadService extends Service {
             task.getMuxer().cancel();
         }
         showToast(getString(R.string.retry_download) + task.fileName);
-        // remove cache and output files
-        clearCache(response);
+        // remove output files
         removeOutput(response);
 
         // Set the running flag to false to stop the task
@@ -372,14 +371,6 @@ public class DownloadService extends Service {
         }
     }
 
-    private void clearCache(DownloadResponse response) {
-        for (File cacheFile : response.getCache()) {
-            if (cacheFile != null) {
-                cacheFile.deleteOnExit();
-            }
-        }
-    }
-
     private void removeOutput(DownloadResponse response) {
         File output = response.getOutput();
         if (output != null && !output.delete()) {
@@ -395,7 +386,6 @@ public class DownloadService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d("download service stop", "onDestroy");
         if (!download_tasks.isEmpty()) {
             Objects.requireNonNull(download_tasks.get(0)).getNotification().clearAll();
 

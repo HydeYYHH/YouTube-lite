@@ -1,11 +1,15 @@
 package com.hhst.youtubelite;
 
 import android.Manifest;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -20,6 +24,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+
 import com.hhst.youtubelite.Downloader.DownloadService;
 
 import java.io.File;
@@ -29,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
         webview.loadUrl(getString(R.string.base_url));
 
         requestPermissions();
+
+        clearCache();
+        startDownloadService();
     }
 
     public final int REQUEST_NOTIFICATION_CODE = 1;
@@ -157,6 +167,48 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return false;
+    }
+
+    public void clearCache() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            File[] cacheDirs = {getCacheDir(), new File(getCacheDir(), "temp")};
+            for (File cacheDir : cacheDirs) {
+                if (cacheDir.exists() && cacheDir.isDirectory()) {
+                    File[] files = cacheDir.listFiles(file -> file.isFile() &&
+                            (file.getName().endsWith(".mp4") || file.getName().endsWith(".m4a"))
+                    );
+                    if (files != null) {
+                        for (File file : files) {
+                            boolean deleted = file.delete();
+                            if (!deleted) {
+                                Log.w("ClearCache", "Failed to delete file: " +
+                                        file.getAbsolutePath());
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    public DownloadService downloadService;
+
+    public void startDownloadService() {
+        ServiceConnection connection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                downloadService = ((DownloadService.DownloadBinder) iBinder).getService();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+            }
+        };
+
+        Intent intent = new Intent(this, DownloadService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
     }
 
     @Override

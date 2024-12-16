@@ -36,7 +36,7 @@ public class Downloader {
                         Log.e("when get info", "Error: " + throwable.getMessage());
                     }
                 })
-                .maxRetries(3);
+                .maxRetries(5);
         Response<VideoInfo> response = new YoutubeDownloader().getVideoInfo(requestVideoInfo);
         VideoInfo videoInfo = response.data();
 
@@ -69,6 +69,12 @@ public class Downloader {
             String fileName,
             File outputDir
     ) {
+        // check and create temp directory
+        File tempDir = new File(context.getCacheDir(), "temp");
+        if (!tempDir.exists() && !tempDir.mkdir()) {
+            return null;
+        }
+
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         long audioSize = audioFormat == null ? 0 : audioFormat.contentLength();
@@ -80,6 +86,7 @@ public class Downloader {
         AtomicInteger videoProgress = new AtomicInteger(0);
 
         Response<File> audioResponse = null;
+        File audioFile = null;
         if (audioFormat != null) {
             RequestVideoFileDownload audioRequest = new RequestVideoFileDownload(audioFormat)
                     .callback(new YoutubeProgressCallback<File>() {
@@ -94,7 +101,8 @@ public class Downloader {
 
                         @Override
                         public void onFinished(File data) {
-
+                            // move output to cache directory
+                            boolean ignored = data.renameTo(new File(context.getCacheDir(), data.getName()));
                         }
 
                         @Override
@@ -104,14 +112,21 @@ public class Downloader {
                     })
                     .renameTo(fileName)
                     .saveTo(context.getCacheDir())
-                    .overwriteIfExists(false)
                     .maxRetries(5)
+                    .overwriteIfExists(true)
                     .async();
 
-            audioResponse = downloader.downloadVideoFile(audioRequest);
+            if (!(audioFile = audioRequest.getOutputFile()).exists()) {
+                // save to temp directory first
+                audioRequest = audioRequest.saveTo(tempDir);
+                audioResponse = downloader.downloadVideoFile(audioRequest);
+            } else {
+                audioProgress.set(100);
+            }
         }
 
         Response<File> videoResponse = null;
+        File videoFile = null;
         if (videoFormat != null) {
             RequestVideoFileDownload videoRequest = new RequestVideoFileDownload(videoFormat)
                     .callback(new YoutubeProgressCallback<File>() {
@@ -126,7 +141,8 @@ public class Downloader {
 
                         @Override
                         public void onFinished(File data) {
-
+                            // move output to cache directory
+                            boolean ignored = data.renameTo(new File(context.getCacheDir(), data.getName()));
                         }
 
                         @Override
@@ -136,15 +152,27 @@ public class Downloader {
                     })
                     .renameTo(fileName)
                     .saveTo(context.getCacheDir())
-                    .overwriteIfExists(false)
                     .maxRetries(5)
+                    .overwriteIfExists(true)
                     .async();
 
-            videoResponse = downloader.downloadVideoFile(videoRequest);
+            if (!(videoFile = videoRequest.getOutputFile()).exists()) {
+                videoRequest.saveTo(tempDir);
+                videoResponse = downloader.downloadVideoFile(videoRequest);
+            } else {
+                videoProgress.set(100);
+            }
         }
 
-
-        return new DownloadResponse(context, videoResponse, audioResponse, outputDir);
+        return new DownloadResponse(
+                context,
+                videoResponse,
+                audioResponse,
+                audioFile,
+                videoFile,
+                new File(outputDir, videoFile == null ? Objects.requireNonNull(audioFile).getName() :
+                        videoFile.getName())
+        );
     }
 
 }

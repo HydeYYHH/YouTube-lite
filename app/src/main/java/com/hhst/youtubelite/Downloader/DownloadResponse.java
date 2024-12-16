@@ -8,21 +8,18 @@ import com.github.kiulian.downloader.downloader.response.Response;
 
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DownloadResponse {
 
     private final Response<File> videoResponse;
     private final Response<File> audioResponse;
-    private final File outputDir;
     private final Context context;
     private final AtomicInteger state;
 
-    private File videoFile;
-    private File audioFile;
-    private File output;
+    private final File audioFile;
+    private final File videoFile;
+    private final File output;
 
     public static final int INITIALIZED = 0;
     public static final int DOWNLOADING = 1;
@@ -33,24 +30,35 @@ public class DownloadResponse {
             Context context,
             Response<File> videoResponse,
             Response<File> audioResponse,
-            File outputDir
+            File audioFile,
+            File videoFile,
+            File output
     ) {
         this.context = context;
         this.videoResponse = videoResponse;
         this.audioResponse = audioResponse;
-        this.outputDir = outputDir;
+        this.audioFile = audioFile;
+        this.videoFile = videoFile;
+        this.output = output;
         state = new AtomicInteger(INITIALIZED);
     }
+
 
     public void execute(DownloadFinishCallback onFinish) {
 
         state.set(DOWNLOADING);
-        audioFile = audioResponse.data();
+        if (audioResponse != null) {
+            audioResponse.data();
+            if (!audioResponse.ok()) {
+                return;
+            }
+        }
+
         if (videoResponse != null) {
-            videoFile = videoResponse.data();
-            output = new File(outputDir, videoFile.getName());
-        } else {
-            output = new File(outputDir, audioFile.getName());
+            videoResponse.data();
+            if (!videoResponse.ok()) {
+                return;
+            }
         }
 
         try {
@@ -72,7 +80,10 @@ public class DownloadResponse {
 
 
     public boolean cancel() {
-        boolean audioCanceled = audioResponse.cancel();
+        boolean audioCanceled = false;
+        if (audioResponse != null) {
+            audioCanceled = audioResponse.cancel();
+        }
         boolean videoCanceled = false;
         if (videoResponse != null) {
             videoCanceled = videoResponse.cancel();
@@ -82,10 +93,6 @@ public class DownloadResponse {
 
     public int getState() {
         return state.get();
-    }
-
-    public List<File> getCache() {
-        return Arrays.asList(audioFile, videoFile);
     }
 
     public File getOutput() {

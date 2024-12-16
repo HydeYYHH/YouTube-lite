@@ -28,4 +28,5 @@
     <string name="merging_canceled">合并被取消</string>
     <string name="delete">删除</string>
     <string name="file_deleted">文件被删除</string>
+    <string name="timeout_occurred_while_downloading_retrying">"下载超时, 尝试重试... "</string>
 </resources>
