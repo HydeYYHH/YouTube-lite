@@ -137,7 +137,6 @@ public class AudioVideoMuxer {
             audioThread.join();
 
             Log.d("test time cost 4", String.valueOf(System.currentTimeMillis() - point));
-            point = System.currentTimeMillis();
 
             // release resources
             videoExtractor.release();

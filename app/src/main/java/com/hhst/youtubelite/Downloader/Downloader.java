@@ -67,14 +67,9 @@ public class Downloader {
             AudioFormat audioFormat,
             YoutubeProgressCallback<File> callback,
             String fileName,
+            File tempDir,
             File outputDir
     ) {
-        // check and create temp directory
-        File tempDir = new File(context.getCacheDir(), "temp");
-        if (!tempDir.exists() && !tempDir.mkdir()) {
-            return null;
-        }
-
         YoutubeDownloader downloader = new YoutubeDownloader();
 
         long audioSize = audioFormat == null ? 0 : audioFormat.contentLength();

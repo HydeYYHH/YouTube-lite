@@ -41,10 +41,6 @@ public class DownloadDialog {
     public DownloadDialog(String video_id, Context context) {
         this.video_id = video_id;
         this.context = context;
-
-        if (details == null) {
-            details = Downloader.info(video_id);
-        }
     }
 
     public void show() {

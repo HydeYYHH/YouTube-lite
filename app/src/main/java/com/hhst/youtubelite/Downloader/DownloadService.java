@@ -174,13 +174,11 @@ public class DownloadService extends Service {
                 task.audioFormat,
                 callback,
                 task.fileName,
+                tempDir,
                 task.getOutput()
         );
 
         // Submit task for execution
-        if (response == null) {
-            return;
-        }
         download_executor.submit(() -> response.execute((video, audio, output) -> {
             // on download finished
             if (task.isAudio) {
@@ -201,7 +199,10 @@ public class DownloadService extends Service {
                 try {
                     AudioVideoMuxer muxer = new AudioVideoMuxer();
                     task.setMuxer(muxer);
-                    muxer.mux(video, audio, output);
+                    File temp_output = new File(tempDir, output.getName());
+                    muxer.mux(video, audio, temp_output);
+                    copyFile(temp_output, output);
+                    boolean ignored = temp_output.delete();
                 } catch (IOException | InterruptedException e) {
                     notification.cancelDownload(getString(R.string.merge_error));
                     showToast(getString(R.string.merge_error));
@@ -238,11 +239,20 @@ public class DownloadService extends Service {
         }
     }
 
+    private File tempDir;
+
     public void initiateDownload(DownloadTask task) {
+        // check and create output directory
         File outputDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                 getString(R.string.app_name));
 
         if (!outputDir.exists() && !outputDir.mkdir()) {
+            return;
+        }
+
+        // check and create temp directory
+        tempDir = new File(getCacheDir(), "temp");
+        if (!tempDir.exists() && !tempDir.mkdir()) {
             return;
         }
 
@@ -261,7 +271,6 @@ public class DownloadService extends Service {
                     task.fileName,
                     true,
                     outputDir
-
             ));
         }
         // download video
