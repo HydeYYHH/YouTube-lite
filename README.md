@@ -5,16 +5,14 @@ YouTube lite
   
   
 
-## Features
+## features
 
-* **super lightweight**
-* **Ad Blocking**
-* **video download**
-* **Background Play**
-* **show dislike count**
-* **Play Progress & Video Quality Memory**
-  
-  
+* **Lightweight, the installation package is only a few MBs in size.**
+* **Ad blocking, including sponsor ads and video ads.**
+* **Video download, supports downloading videos, audio-only, and saving thumbnails.**
+* **Background play.**
+* **In addition to showing the like count, this app can also display the dislike count.**
+* **Playback progress memory, video quality memory, etc.**
 
 ## Screenshots
 

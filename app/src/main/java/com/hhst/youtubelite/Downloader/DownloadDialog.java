@@ -49,7 +49,6 @@ public class DownloadDialog {
 
     public void show() {
 
-        // bind download service
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(context.getString(R.string.download));
