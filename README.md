@@ -1,10 +1,9 @@
 YouTube lite
 ============
 
-[English](https://github.com/HydeYYHH/YouTube-lite/blob/main/README.md)	[中文](https://github.com/HydeYYHH/YouTube-lite/blob/main/README_zh.md)
+[English](https://github.com/HydeYYHH/YouTube-lite/blob/main/README.md)     [中文](https://github.com/HydeYYHH/YouTube-lite/blob/main/README_zh.md)
 
 * YouTube lite is a lightweight Android WebView wrapper for YouTube, offering many additional features such as ads blocking, background play, video download and playback progress memory.
-  
 
 ## features
 
