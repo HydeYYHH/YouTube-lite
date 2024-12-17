@@ -1,6 +1,8 @@
 YouTube lite
 ============
 
+[English](https://github.com/HydeYYHH/YouTube-lite/blob/main/README.md)    [中文](https://github.com/HydeYYHH/YouTube-lite/blob/main/README_zh.md)
+
 * YouTube Lite 是一个轻量级的 Android WebView 封装应用，提供许多额外功能，如广告拦截、后台播放、视频下载以及播放进度记忆。
   
   
