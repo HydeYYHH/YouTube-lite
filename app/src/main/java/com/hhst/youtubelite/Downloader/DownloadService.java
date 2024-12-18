@@ -200,10 +200,11 @@ public class DownloadService extends Service {
                     AudioVideoMuxer muxer = new AudioVideoMuxer();
                     task.setMuxer(muxer);
                     File temp_output = new File(tempDir, output.getName());
+                    // speed up the mux process
                     muxer.mux(video, audio, temp_output);
                     copyFile(temp_output, output);
                     boolean ignored = temp_output.delete();
-                } catch (IOException | InterruptedException e) {
+                } catch (IOException e) {
                     notification.cancelDownload(getString(R.string.merge_error));
                     showToast(getString(R.string.merge_error));
                     return;
