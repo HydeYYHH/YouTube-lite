@@ -1,4 +1,4 @@
-package com.hhst.youtubelite.helper;
+package com.hhst.youtubelite.helper.muxer;
 
 import android.annotation.SuppressLint;
 import android.media.MediaCodec;
@@ -10,6 +10,9 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AudioVideoMuxer {
@@ -21,7 +24,7 @@ public class AudioVideoMuxer {
     }
 
     @SuppressLint("WrongConstant")
-    public void mux(File videoFile, File audioFile, File outputFile) throws IOException, InterruptedException {
+    public void mux(File videoFile, File audioFile, File outputFile) throws IOException {
 
         try {
             // for test
@@ -85,56 +88,26 @@ public class AudioVideoMuxer {
             // start to mux
             muxer.start();
 
-            // Buffer and MediaCodec info
-            ByteBuffer video_buffer = ByteBuffer.allocateDirect(2 * 1024 * 1024);
-            ByteBuffer audio_buffer = ByteBuffer.allocateDirect(2 * 1024 * 1024);
-            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-            MediaCodec.BufferInfo audioBufferInfo = new MediaCodec.BufferInfo();
+            // for video
+            List<Thread> video_threads = process(muxer, videoExtractor, videoTrackIndex);
+            // for audio
+            List<Thread> audio_thread = process(muxer, audioExtractor, audioTrackIndex);
 
-            // Use threads for video and audio muxing
-            int finalVideoTrackIndex = videoTrackIndex;
-            Thread videoThread = new Thread(() -> {
+            // Wait for all threads to finish
+            video_threads.forEach(it -> {
                 try {
-                    int videoSampleSize;
-                    while ((videoSampleSize = videoExtractor.readSampleData(video_buffer, 0)) > 0 &&
-                            !canceled.get()) {
-                        bufferInfo.flags = videoExtractor.getSampleFlags();
-                        bufferInfo.offset = 0;
-                        bufferInfo.size = videoSampleSize;
-                        bufferInfo.presentationTimeUs = videoExtractor.getSampleTime();
-                        muxer.writeSampleData(finalVideoTrackIndex, video_buffer, bufferInfo);
-                        videoExtractor.advance();
-                    }
-                } catch (Exception e) {
-                    Log.e("Video Thread Error", Log.getStackTraceString(e));
+                    it.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             });
-
-            int finalAudioTrackIndex = audioTrackIndex;
-            Thread audioThread = new Thread(() -> {
+            audio_thread.forEach(it -> {
                 try {
-                    int audioSampleSize;
-                    while ((audioSampleSize = audioExtractor.readSampleData(audio_buffer, 0)) > 0 &&
-                            !canceled.get()) {
-                        audioBufferInfo.flags = audioExtractor.getSampleFlags();
-                        audioBufferInfo.offset = 0;
-                        audioBufferInfo.size = audioSampleSize;
-                        audioBufferInfo.presentationTimeUs = audioExtractor.getSampleTime();
-                        muxer.writeSampleData(finalAudioTrackIndex, audio_buffer, audioBufferInfo);
-                        audioExtractor.advance();
-                    }
-                } catch (Exception e) {
-                    Log.e("Audio Thread Error", Log.getStackTraceString(e));
+                    it.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             });
-
-            // Start both threads
-            videoThread.start();
-            audioThread.start();
-
-            // Wait for both threads to finish
-            videoThread.join();
-            audioThread.join();
 
             Log.d("test time cost 4", String.valueOf(System.currentTimeMillis() - point));
 
@@ -145,8 +118,68 @@ public class AudioVideoMuxer {
             muxer.release();
 
         } catch (Exception e) {
-            Log.e("muxer", Log.getStackTraceString(e));
+            Log.e("muxer error", Log.getStackTraceString(e));
             throw e;
         }
     }
+
+    @SuppressLint("WrongConstant")
+    private List<Thread> process(MediaMuxer muxer, MediaExtractor extractor, int trackIndex) {
+
+        BlockingQueue<Sample> queue = new LinkedBlockingQueue<>();
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        // for speed up
+        // read thread
+        Thread readThread = new Thread(() -> {
+            try {
+                ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
+                while (!canceled.get()) {
+                    int sampleSize = extractor.readSampleData(buffer, 0);
+                    if (sampleSize > 0) {
+                        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                        bufferInfo.flags = extractor.getSampleFlags();
+                        bufferInfo.offset = 0;
+                        bufferInfo.size = sampleSize;
+                        bufferInfo.presentationTimeUs = extractor.getSampleTime();
+                        byte[] data = new byte[bufferInfo.size];
+                        buffer.rewind();
+                        buffer.get(data);
+                        queue.put(new Sample(ByteBuffer.wrap(data), bufferInfo));
+                        extractor.advance();
+                    } else {
+                        done.set(true); // mark read process has finished
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
+                Log.e("Muxer Process Error", Log.getStackTraceString(e));
+            }
+        });
+
+        // write thread
+        Thread writeThread = new Thread(() -> {
+            try {
+                while (!canceled.get()) {
+                    if (done.get() && queue.isEmpty()) {
+                        break;
+                    }
+                    Sample sample = queue.take();
+                    ByteBuffer buffer = sample.buffer;
+                    muxer.writeSampleData(trackIndex, buffer, sample.info);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Log.e("Muxer Process Error", Log.getStackTraceString(e));
+            }
+        });
+
+        readThread.start();
+        writeThread.start();
+
+        return List.of(readThread, writeThread);
+    }
+
+
 }

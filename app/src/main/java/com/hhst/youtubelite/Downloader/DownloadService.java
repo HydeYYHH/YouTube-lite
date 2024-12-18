@@ -17,7 +17,7 @@ import androidx.annotation.Nullable;
 
 import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
 import com.hhst.youtubelite.R;
-import com.hhst.youtubelite.helper.AudioVideoMuxer;
+import com.hhst.youtubelite.helper.muxer.AudioVideoMuxer;
 
 import java.io.File;
 import java.io.FileInputStream;

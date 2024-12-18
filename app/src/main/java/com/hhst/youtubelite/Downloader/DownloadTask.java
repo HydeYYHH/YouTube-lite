@@ -3,7 +3,7 @@ package com.hhst.youtubelite.Downloader;
 
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
-import com.hhst.youtubelite.helper.AudioVideoMuxer;
+import com.hhst.youtubelite.helper.muxer.AudioVideoMuxer;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
