@@ -114,6 +114,12 @@ public class DownloadDialog {
 
         // on download button clicked
         buttonDownload.setOnClickListener(v -> {
+            // fixed in live page
+            if (details == null) {
+                dialog.dismiss();
+                return;
+            }
+
             if (!isVideoSelected.get() && !isThumbnailSelected.get() && !isAudioSelected.get()) {
                 dialogView.post(() -> Toast.makeText(
                         context,

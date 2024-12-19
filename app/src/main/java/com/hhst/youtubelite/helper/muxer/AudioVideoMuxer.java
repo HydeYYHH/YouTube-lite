@@ -127,6 +127,7 @@ public class AudioVideoMuxer {
     private List<Thread> process(MediaMuxer muxer, MediaExtractor extractor, int trackIndex) {
 
         BlockingQueue<Sample> queue = new LinkedBlockingQueue<>();
+        BufferPool bufferPool = new BufferPool(1024 * 1024, 20);
         AtomicBoolean done = new AtomicBoolean(false);
 
         // for speed up
@@ -142,10 +143,8 @@ public class AudioVideoMuxer {
                         bufferInfo.offset = 0;
                         bufferInfo.size = sampleSize;
                         bufferInfo.presentationTimeUs = extractor.getSampleTime();
-                        byte[] data = new byte[bufferInfo.size];
-                        buffer.rewind();
-                        buffer.get(data);
-                        queue.put(new Sample(ByteBuffer.wrap(data), bufferInfo));
+                        queue.put(new Sample(buffer, bufferInfo));
+                        buffer = bufferPool.acquire();
                         extractor.advance();
                     } else {
                         done.set(true); // mark read process has finished
@@ -153,8 +152,8 @@ public class AudioVideoMuxer {
                     }
                 }
             } catch (Exception e) {
-                Thread.currentThread().interrupt();
                 Log.e("Muxer Process Error", Log.getStackTraceString(e));
+                Thread.currentThread().interrupt();
             }
         });
 
@@ -168,10 +167,12 @@ public class AudioVideoMuxer {
                     Sample sample = queue.take();
                     ByteBuffer buffer = sample.buffer;
                     muxer.writeSampleData(trackIndex, buffer, sample.info);
+                    // release buffer to buffer pool
+                    bufferPool.release(buffer);
                 }
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 Log.e("Muxer Process Error", Log.getStackTraceString(e));
+                Thread.currentThread().interrupt();
             }
         });
 
