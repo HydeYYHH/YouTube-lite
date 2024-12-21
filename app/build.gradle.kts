@@ -10,8 +10,8 @@ android {
         applicationId = "com.hhst.youtubelite"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.4.7"
+        versionCode = 13
+        versionName = "1.4.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
