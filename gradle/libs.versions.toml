@@ -1,6 +1,5 @@
 [versions]
 agp = "8.5.0"
-isoparser = "1.9.27"
 javaYoutubeDownloader = "3.2.6"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -9,11 +8,9 @@ appcompat = "1.6.1"
 material = "1.10.0"
 activity = "1.8.0"
 constraintlayout = "2.1.4"
-muxer = "1.9.41"
 swiperefreshlayout = "1.1.0"
 
 [libraries]
-isoparser = { module = "org.mp4parser:isoparser", version.ref = "isoparser" }
 java-youtube-downloader = { module = "com.github.sealedtx:java-youtube-downloader", version.ref = "javaYoutubeDownloader" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -22,7 +19,6 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-muxer = { module = "org.mp4parser:muxer", version.ref = "muxer" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 
 [plugins]

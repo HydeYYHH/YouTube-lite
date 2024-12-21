@@ -6,6 +6,7 @@ import android.util.Log;
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
+import com.github.kiulian.downloader.downloader.client.ClientType;
 import com.github.kiulian.downloader.downloader.request.RequestVideoFileDownload;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.downloader.response.Response;
@@ -26,6 +27,7 @@ public class Downloader {
         Log.d("get video id", String.valueOf(video_id));
 
         RequestVideoInfo requestVideoInfo = new RequestVideoInfo(video_id)
+                .clientType(ClientType.IOS)
                 .callback(new YoutubeCallback<VideoInfo>() {
                     @Override
                     public void onFinished(VideoInfo videoInfo) {
