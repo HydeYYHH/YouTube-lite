@@ -118,7 +118,7 @@ public class YWebview extends WebView {
                 super.doUpdateVisitedHistory(view, url, isReload);
                 evaluateJavascript(
                         "window.dispatchEvent(new Event('doUpdateVisitedHistory'));",
-                        value -> {}
+                        null
                 );
             }
 
@@ -127,10 +127,10 @@ public class YWebview extends WebView {
                 super.onPageStarted(view, url, favicon);
                 evaluateJavascript(
                         "window.dispatchEvent(new Event('onPageStarted'));",
-                        value -> {}
+                        null
                 );
                 for (String js : js_res) {
-                    evaluateJavascript(js, value -> {});
+                    evaluateJavascript(js, null);
                 }
             }
 
@@ -139,10 +139,10 @@ public class YWebview extends WebView {
                 super.onPageFinished(view, url);
                 evaluateJavascript(
                         "window.dispatchEvent(new Event('onPageFinished'));",
-                        value -> {}
+                        null
                 );
                 for (String js : js_res) {
-                    evaluateJavascript(js, value -> {});
+                    evaluateJavascript(js, null);
                 }
             }
 
@@ -168,7 +168,7 @@ public class YWebview extends WebView {
                     progressBar.setProgress(0);
                     evaluateJavascript(
                             "window.dispatchEvent(new Event('onProgressChangeFinish'));",
-                            value -> {}
+                            null
                     );
                 }
                 super.onProgressChanged(view, progress);
@@ -204,7 +204,7 @@ public class YWebview extends WebView {
                 mainActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 evaluateJavascript(
                         "window.dispatchEvent(new Event('onFullScreen'));",
-                        value -> {}
+                        null
                 );
             }
 
@@ -219,7 +219,7 @@ public class YWebview extends WebView {
                 mainActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 evaluateJavascript(
                         "window.dispatchEvent(new Event('exitFullScreen'));",
-                        value -> {}
+                        null
                 );
             }
         });
