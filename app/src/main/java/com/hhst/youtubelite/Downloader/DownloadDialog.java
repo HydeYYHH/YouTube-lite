@@ -1,6 +1,5 @@
 package com.hhst.youtubelite.Downloader;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,7 +13,10 @@ import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hhst.youtubelite.MainActivity;
 import com.hhst.youtubelite.R;
 
@@ -45,14 +47,13 @@ public class DownloadDialog {
 
     public void show() {
 
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(context.getString(R.string.download));
-
         dialogView = View.inflate(context, R.layout.download_dialog, null);
-        builder.setView(dialogView);
-        builder.setCancelable(true);
-        AlertDialog dialog = builder.create();
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(context.getString(R.string.download))
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
 
 
         ImageView imageView = dialogView.findViewById(R.id.download_image);
@@ -203,11 +204,12 @@ public class DownloadDialog {
             AtomicReference<VideoFormat> selectedQuality,
             QualitySelectedListener listener
     ) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(context.getString(R.string.video_quality));
 
         View dialogView = View.inflate(context, R.layout.quality_selector, null);
-        builder.setView(dialogView);
+        AlertDialog qualityDialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(context.getString(R.string.video_quality))
+                .setView(dialogView)
+                .create();
 
         LinearLayout quality_selector = dialogView.findViewById(R.id.quality_container);
         Button cancelButton = dialogView.findViewById(R.id.button_cancel);
@@ -265,8 +267,6 @@ public class DownloadDialog {
                 );
             }
         });
-
-        AlertDialog qualityDialog = builder.create();
 
         cancelButton.setOnClickListener(v -> qualityDialog.dismiss());
         confirmButton.setOnClickListener(v -> {

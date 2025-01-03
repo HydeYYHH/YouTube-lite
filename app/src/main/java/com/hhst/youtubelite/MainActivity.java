@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnRefreshListener(
                 () -> webview.evaluateJavascript(
                         "window.dispatchEvent(new Event('onRefresh'));",
-                        null
+                        value -> {}
                 )
         );
         swipeRefreshLayout.setProgressViewOffset(true, 80,180);
@@ -150,12 +150,12 @@ public class MainActivity extends AppCompatActivity {
         if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
             webview.evaluateJavascript(
                     "window.dispatchEvent(new Event('onGoBack'));",
-                    null
+                    value -> {}
             );
             if (webview.fullscreen != null && webview.fullscreen.getVisibility() == View.VISIBLE){
                 webview.evaluateJavascript(
                         "document.exitFullscreen()",
-                        null
+                        value -> {}
                 );
                 return true;
             }

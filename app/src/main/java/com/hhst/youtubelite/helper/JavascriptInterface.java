@@ -2,6 +2,8 @@ package com.hhst.youtubelite.helper;
 
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.hhst.youtubelite.MainActivity;
@@ -36,7 +38,9 @@ public class JavascriptInterface {
 
     @android.webkit.JavascriptInterface
     public void download(String video_id){
-        new DownloadDialog(video_id, context).show();
+        new Handler(Looper.getMainLooper()).post(
+                () -> new DownloadDialog(video_id, context).show()
+        );
     }
 
 }
