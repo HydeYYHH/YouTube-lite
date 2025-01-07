@@ -12,7 +12,7 @@
     <ImageView
         android:id="@+id/download_image"
         android:layout_width="match_parent"
-        android:layout_height="155dp"
+        android:layout_height="150dp"
         android:scaleType="centerCrop"
         android:layout_marginBottom="10dp"
         android:contentDescription="@string/thumbnail" />

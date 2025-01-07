@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -81,11 +82,20 @@ public class DownloadDialog {
         buttonThumbnail.setBackgroundColor(context.getColor(android.R.color.darker_gray));
         buttonAudio.setBackgroundColor(context.getColor(android.R.color.darker_gray));
 
+        // on checked color
+        TypedValue typedValue = new TypedValue();
+        context.getTheme().resolveAttribute(
+                com.google.android.material.R.attr.colorPrimary,
+                typedValue,
+                true
+        );
+        int colorPrimary = typedValue.data;
+
         // on video button clicked
         buttonVideo.setOnClickListener(v -> showVideoQualityDialog(selectedQuality, quality_selected -> {
             isVideoSelected.set(quality_selected);
             if (isVideoSelected.get()) {
-                buttonVideo.setBackgroundColor(context.getColor(android.R.color.holo_blue_dark));
+                buttonVideo.setBackgroundColor(colorPrimary);
             } else {
                 buttonVideo.setBackgroundColor(context.getColor(android.R.color.darker_gray));
             }
@@ -96,7 +106,7 @@ public class DownloadDialog {
             isThumbnailSelected.set(!isThumbnailSelected.get());
             buttonThumbnail.setSelected(isThumbnailSelected.get());
             if (isThumbnailSelected.get()) {
-                buttonThumbnail.setBackgroundColor(context.getColor(android.R.color.holo_blue_dark));
+                buttonThumbnail.setBackgroundColor(colorPrimary);
             } else {
                 buttonThumbnail.setBackgroundColor(context.getColor(android.R.color.darker_gray));
             }
@@ -107,7 +117,7 @@ public class DownloadDialog {
             isAudioSelected.set(!isAudioSelected.get());
             buttonAudio.setSelected(isAudioSelected.get());
             if (isAudioSelected.get()) {
-                buttonAudio.setBackgroundColor(context.getColor(android.R.color.holo_blue_dark));
+                buttonAudio.setBackgroundColor(colorPrimary);
             } else {
                 buttonAudio.setBackgroundColor(context.getColor(android.R.color.darker_gray));
             }
