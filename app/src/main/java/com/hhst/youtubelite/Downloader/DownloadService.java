@@ -179,47 +179,54 @@ public class DownloadService extends Service {
         );
 
         // Submit task for execution
-        download_executor.submit(() -> response.execute((video, audio, output) -> {
-            // on download finished
-            if (task.isAudio) {
-                // Move audio file
-                try {
-                    copyFile(audio, output);
-                } catch (IOException e) {
-                    Log.e("Error copying audio file", Log.getStackTraceString(e));
+        download_executor.submit(() -> {
+            boolean ok = response.execute((video, audio, output) -> {
+                // on download finished
+                if (task.isAudio) {
+                    // Move audio file
+                    try {
+                        copyFile(audio, output);
+                    } catch (IOException e) {
+                        Log.e("Error copying audio file", Log.getStackTraceString(e));
+                    }
+
+                    notification.completeDownload(
+                            String.format(getString(R.string.download_finished), fileName, output.getPath()),
+                            output,
+                            "audio/*"
+                    );
+                } else {
+                    notification.afterDownload();
+                    try {
+                        AudioVideoMuxer muxer = new AudioVideoMuxer();
+                        task.setMuxer(muxer);
+                        File temp_output = new File(tempDir, output.getName());
+                        // speed up the mux process
+                        muxer.mux(video, audio, temp_output);
+                        copyFile(temp_output, output);
+                        boolean ignored = temp_output.delete();
+                    } catch (IOException e) {
+                        notification.cancelDownload(getString(R.string.merge_error));
+                        showToast(getString(R.string.merge_error));
+                        return;
+                    }
+
+                    notification.completeDownload(
+                            String.format(getString(R.string.download_finished), fileName, output.getPath()),
+                            output,
+                            "video/*"
+                    );
                 }
 
-                notification.completeDownload(
-                        String.format(getString(R.string.download_finished), fileName, output.getPath()),
-                        output,
-                        "audio/*"
-                );
-            } else {
-                notification.afterDownload();
-                try {
-                    AudioVideoMuxer muxer = new AudioVideoMuxer();
-                    task.setMuxer(muxer);
-                    File temp_output = new File(tempDir, output.getName());
-                    // speed up the mux process
-                    muxer.mux(video, audio, temp_output);
-                    copyFile(temp_output, output);
-                    boolean ignored = temp_output.delete();
-                } catch (IOException e) {
-                    notification.cancelDownload(getString(R.string.merge_error));
-                    showToast(getString(R.string.merge_error));
-                    return;
-                }
-
-                notification.completeDownload(
-                        String.format(getString(R.string.download_finished), fileName, output.getPath()),
-                        output,
-                        "video/*"
-                );
+                showToast(String.format(getString(R.string.download_finished), fileName, output.getPath()));
+                task.setRunning(false);
+            });
+            if (!ok) {
+                Log.e("Download error", "audio or video response not ok");
+                notification.cancelDownload("  " + getString(R.string.failed_to_download));
+                task.setRunning(false);
             }
-
-            showToast(String.format(getString(R.string.download_finished), fileName, output.getPath()));
-            task.setRunning(false);
-        }));
+        });
 
         // Finalize task setup
         task.setResponse(response);

@@ -3,6 +3,8 @@ package com.hhst.youtubelite.Downloader;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -21,29 +23,41 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hhst.youtubelite.MainActivity;
 import com.hhst.youtubelite.R;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DownloadDialog {
-    private final String video_id;
     private final Context context;
 
+    private final ExecutorService executor;
     private DownloadDetails details;
+    private final CountDownLatch latch;
     private View dialogView;
 
 
-
     public DownloadDialog(String video_id, Context context) {
-        this.video_id = video_id;
         this.context = context;
+        executor = Executors.newCachedThreadPool();
+        latch = new CountDownLatch(1);
+        executor.execute(() -> {
+            try {
+                details = Downloader.info(video_id);
+                latch.countDown();
+            } catch (Exception e) {
+                new Handler(Looper.getMainLooper()).post(() ->
+                        Toast.makeText(context, context.getString(R.string.failed_to_load_video_details) + Log.getStackTraceString(e), Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 
     public void show() {
@@ -56,6 +70,7 @@ public class DownloadDialog {
                 .setCancelable(true)
                 .create();
 
+        dialog.setOnDismissListener(dialogInterface -> executor.shutdownNow());
 
         ImageView imageView = dialogView.findViewById(R.id.download_image);
         EditText editText = dialogView.findViewById(R.id.download_edit_text);
@@ -162,12 +177,9 @@ public class DownloadDialog {
     }
 
     private void loadImage(ImageView imageView) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
-                if (details == null) {
-                    details = Downloader.info(video_id);
-                }
+                latch.await();
                 URL url = new URL(details.getThumbnail());
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setDoInput(true);
@@ -178,7 +190,8 @@ public class DownloadDialog {
 
                 dialogView.post(() -> imageView.setImageBitmap(bitmap));
 
-            } catch (Exception e) {
+                connection.disconnect();
+            } catch (IOException | InterruptedException e) {
                 Log.e("When fetch thumbnail", Log.getStackTraceString(e));
                 dialogView.post(() ->
                         Toast.makeText(context,
@@ -190,22 +203,15 @@ public class DownloadDialog {
     }
 
     private void loadVideoName(EditText editText) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
-                if (details == null) {
-                    details = Downloader.info(video_id);
-                }
+                latch.await();
                 String title = details.getTitle();
                 String author = details.getAuthor();
                 String video_default_name = String.format("%s-%s", title, author);
                 dialogView.post(() -> editText.setText(video_default_name));
-            } catch (Exception e) {
-                Log.e("When load video name", Log.getStackTraceString(e));
-                dialogView.post(() -> Toast.makeText(
-                        context, context.getString(R.string.failed_to_load_video_details) + e,
-                        Toast.LENGTH_SHORT).show()
-                );
+            } catch (InterruptedException e) {
+                Log.e("When load video title and author", Log.getStackTraceString(e));
             }
         });
     }
@@ -232,49 +238,41 @@ public class DownloadDialog {
         AtomicReference<CheckBox> checked_box = new AtomicReference<>();
         AtomicReference<VideoFormat> selected_format = new AtomicReference<>();
         // avoid trigger radioGroup.setOnCheckedChangeListener when initiate the radio button check state
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
-                if (details == null) {
-                    details = Downloader.info(video_id);
-                }
+                latch.await();
                 long audio_size = details.getAudioFormats().get(0).contentLength();
                 details.getVideoFormats().forEach(it -> {
-                    // avoid duplicate labels
-                    if (!quality_labels.contains(it.qualityLabel())) {
-                        quality_labels.add(it.qualityLabel());
-                        CheckBox choice = new CheckBox(context);
-                        choice.setText(String.format("%s (%s)", it.qualityLabel(), formatSize(audio_size + it.contentLength())));
-                        choice.setLayoutParams(
-                                new RadioGroup.LayoutParams(
-                                        RadioGroup.LayoutParams.MATCH_PARENT,
-                                        RadioGroup.LayoutParams.WRAP_CONTENT
-                                )
-                        );
-                        choice.setOnCheckedChangeListener((v, isChecked) -> {
-                            if (isChecked) {
-                                if (checked_box.get() != null) {
-                                    checked_box.get().setChecked(false);
-                                }
-                                selected_format.set(it);
-                                checked_box.set((CheckBox) v);
-                            } else {
-                                selected_format.set(null);
-                                checked_box.set(null);
+                // avoid duplicate labels
+                if (!quality_labels.contains(it.qualityLabel())) {
+                    quality_labels.add(it.qualityLabel());
+                    CheckBox choice = new CheckBox(context);
+                    choice.setText(String.format("%s (%s)", it.qualityLabel(), formatSize(audio_size + it.contentLength())));
+                    choice.setLayoutParams(
+                            new RadioGroup.LayoutParams(
+                                    RadioGroup.LayoutParams.MATCH_PARENT,
+                                    RadioGroup.LayoutParams.WRAP_CONTENT
+                            )
+                    );
+                    choice.setOnCheckedChangeListener((v, isChecked) -> {
+                        if (isChecked) {
+                            if (checked_box.get() != null) {
+                                checked_box.get().setChecked(false);
                             }
-                        });
-                        quality_selector.addView(choice);
-                        if (selectedQuality.get() != null && selectedQuality.get().equals(it)) {
-                            choice.setChecked(true);
+                            selected_format.set(it);
+                            checked_box.set((CheckBox) v);
+                        } else {
+                            selected_format.set(null);
+                            checked_box.set(null);
                         }
+                    });
+                    quality_selector.addView(choice);
+                    if (selectedQuality.get() != null && selectedQuality.get().equals(it)) {
+                        choice.setChecked(true);
                     }
-                });
+                }});
             } catch (Exception e) {
                 Log.e("When show VideoQualityDialog", Log.getStackTraceString(e));
-                dialogView.post(() -> Toast.makeText(
-                        context, context.getString(R.string.failed_to_load_available_video_quality) + e,
-                        Toast.LENGTH_SHORT).show()
-                );
             }
         });
 
@@ -289,7 +287,6 @@ public class DownloadDialog {
             }
             qualityDialog.dismiss();
         });
-
 
         qualityDialog.show();
     }

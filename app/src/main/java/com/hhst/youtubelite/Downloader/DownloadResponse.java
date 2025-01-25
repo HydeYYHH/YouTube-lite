@@ -44,20 +44,22 @@ public class DownloadResponse {
     }
 
 
-    public void execute(DownloadFinishCallback onFinish) {
+    public boolean execute(DownloadFinishCallback onFinish) {
 
         state.set(DOWNLOADING);
         if (audioResponse != null) {
             audioResponse.data();
             if (!audioResponse.ok()) {
-                return;
+                Log.w("audio response not ok", Log.getStackTraceString(audioResponse.error()));
+                return false;
             }
         }
 
         if (videoResponse != null) {
             videoResponse.data();
             if (!videoResponse.ok()) {
-                return;
+                Log.w("video response not ok", Log.getStackTraceString(videoResponse.error()));
+                return false;
             }
         }
 
@@ -76,6 +78,7 @@ public class DownloadResponse {
             state.set(COMPLETED);
         }
 
+        return true;
     }
 
 

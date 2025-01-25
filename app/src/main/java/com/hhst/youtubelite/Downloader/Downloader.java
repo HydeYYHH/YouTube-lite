@@ -6,7 +6,8 @@ import android.util.Log;
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.downloader.YoutubeCallback;
 import com.github.kiulian.downloader.downloader.YoutubeProgressCallback;
-import com.github.kiulian.downloader.downloader.client.ClientType;
+import com.github.kiulian.downloader.downloader.client.Client;
+import com.github.kiulian.downloader.downloader.client.Clients;
 import com.github.kiulian.downloader.downloader.request.RequestVideoFileDownload;
 import com.github.kiulian.downloader.downloader.request.RequestVideoInfo;
 import com.github.kiulian.downloader.downloader.response.Response;
@@ -18,31 +19,43 @@ import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Downloader {
 
-    public static DownloadDetails info(String video_id) {
+    public static DownloadDetails info(String video_id) throws Exception {
+        // try to select the available client
+        VideoInfo videoInfo = null;
+        Set<Client> clients = Clients.defaultClients();
+        for(Client client: clients) {
+            Log.d("try client", client.getType().getName());
+            RequestVideoInfo requestVideoInfo = new RequestVideoInfo(video_id)
+                    .clientType(client.getType())
+                    .callback(new YoutubeCallback<VideoInfo>() {
+                        @Override
+                        public void onFinished(VideoInfo videoInfo) {
+                        }
 
-        Log.d("get video id", String.valueOf(video_id));
+                        @Override
+                        public void onError(Throwable throwable) {
+                            Log.e("when get info", "Error: " + throwable.getMessage());
+                        }
+                    });
 
-        RequestVideoInfo requestVideoInfo = new RequestVideoInfo(video_id)
-                .clientType(ClientType.IOS)
-                .callback(new YoutubeCallback<VideoInfo>() {
-                    @Override
-                    public void onFinished(VideoInfo videoInfo) {
-                    }
+            Response<VideoInfo> response = new YoutubeDownloader().getVideoInfo(requestVideoInfo);
+            videoInfo = response.data();
+            if (videoInfo != null) {
+                Clients.setHighestPriorityClientType(client.getType());
+                break;
+            }
+        }
 
-                    @Override
-                    public void onError(Throwable throwable) {
-                        Log.e("when get info", "Error: " + throwable.getMessage());
-                    }
-                })
-                .maxRetries(5);
-        Response<VideoInfo> response = new YoutubeDownloader().getVideoInfo(requestVideoInfo);
-        VideoInfo videoInfo = response.data();
+        if (videoInfo == null) {
+            throw new Exception("Error: streamingData not found");
+        }
+        VideoDetails videoDetails = videoInfo.details();
 
-        VideoDetails videoDetails = Objects.requireNonNull(videoInfo).details();
         DownloadDetails details = new DownloadDetails();
         details.title = videoDetails.title();
         details.author = videoDetails.author();
@@ -58,7 +71,7 @@ public class Downloader {
 
         // only use best audio format
         details.audioFormats = List.of(videoInfo.bestAudioFormat());
-
+        Log.d("video detail info", details.toString());
         return details;
 
     }

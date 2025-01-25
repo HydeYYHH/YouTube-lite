@@ -29,5 +29,5 @@
     <string name="delete">Delete</string>
     <string name="file_deleted">File deleted</string>
     <string name="audio_only">Audio Only</string>
-    <string name="timeout_occurred_while_downloading_retrying">Timeout occurred while downloading, retrying...</string>
+    <string name="timeout_occurred_while_downloading_retrying">Timeout occurred while downloading, retrying…</string>
 </resources>

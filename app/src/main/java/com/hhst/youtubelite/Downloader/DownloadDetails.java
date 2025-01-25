@@ -1,9 +1,12 @@
 package com.hhst.youtubelite.Downloader;
 
+import androidx.annotation.NonNull;
+
 import com.github.kiulian.downloader.model.videos.formats.AudioFormat;
 import com.github.kiulian.downloader.model.videos.formats.VideoFormat;
 
 import java.util.List;
+import java.util.Locale;
 
 public class DownloadDetails {
 
@@ -38,4 +41,9 @@ public class DownloadDetails {
         return audioFormats;
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(), "author: %s, title: %s, thumbnail url: %s", author, title, thumbnail);
+    }
 }
